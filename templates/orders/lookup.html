@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}My Orders &amp; Pickup Tokens | {{ business_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 32px 16px 60px; max-width: 620px;">
+  <h1 style="font-family: var(--font-heading); font-size: 1.85rem; text-transform: uppercase; margin-bottom: 8px;">
+    Track Your Orders &amp; Tokens
+  </h1>
+  <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+    Enter your registered 10-digit mobile number to view your active pickup tokens and recent orders.
+  </p>
+
+  <!-- Mobile Lookup Form -->
+  <form method="GET" action="/orders/lookup/" style="display: flex; gap: 8px; margin-bottom: 24px;">
+    <input type="tel" name="mobile" value="{{ mobile }}" pattern="[0-9]{10}" maxlength="10" required placeholder="Enter 10-digit mobile number"
+           style="flex: 1; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-family: var(--font-body); font-size: 1rem;">
+    <button type="submit" class="hero-cta-btn" style="padding: 12px 20px; font-size: 0.95rem;">
+      FIND ORDERS
+    </button>
+  </form>
+
+  <!-- Security / Error Alert -->
+  {% if error_message %}
+    <div style="background: #FFF5F5; border: 1px solid #FFC9C9; color: #C92A2A; border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 20px; font-size: 0.9rem; line-height: 1.4;">
+      🔒 <strong>Notice:</strong> {{ error_message }}
+    </div>
+  {% endif %}
+
+  <!-- Results -->
+  {% if orders is not None %}
+    {% if orders %}
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        {% for ord in orders %}
+          <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+              <div>
+                <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">PICKUP TOKEN</span>
+                <div style="font-family: var(--font-heading); font-size: 2rem; color: var(--primary); font-weight: 800; line-height: 1;">
+                  {{ ord.token }}
+                </div>
+                <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">
+                  Order #{{ ord.order_number }} &bull; Booked on {{ ord.created_at|date:"M d, g:i A" }}
+                </div>
+              </div>
+
+              <div>
+                {% if ord.order_status == 'READY' %}
+                  <span style="background: #E6FCF5; color: #0CA678; border: 1px solid #63E6BE; padding: 4px 10px; border-radius: 9999px; font-weight: 800; font-size: 0.85rem; display: inline-block;">
+                    🟢 READY FOR PICKUP!
+                  </span>
+                {% elif ord.order_status == 'PREPARING' %}
+                  <span style="background: #FFF3BF; color: #D9480F; padding: 4px 10px; border-radius: 9999px; font-weight: 700; font-size: 0.82rem; display: inline-block;">
+                    🔥 PREPARING
+                  </span>
+                {% elif ord.order_status == 'CONFIRMED' %}
+                  <span style="background: #E7F5FF; color: #1971C2; padding: 4px 10px; border-radius: 9999px; font-weight: 700; font-size: 0.82rem; display: inline-block;">
+                    ✓ CONFIRMED
+                  </span>
+                {% elif ord.order_status == 'COMPLETED' %}
+                  <span style="background: #F1F3F5; color: #495057; padding: 4px 10px; border-radius: 9999px; font-weight: 600; font-size: 0.82rem; display: inline-block;">
+                    COMPLETED
+                  </span>
+                {% else %}
+                  <span style="background: #FFE3E3; color: #C92A2A; padding: 4px 10px; border-radius: 9999px; font-weight: 600; font-size: 0.82rem; display: inline-block;">
+                    {{ ord.order_status }}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Details -->
+            <div style="background: #F8F9FA; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.88rem; display: flex; justify-content: space-between; margin-bottom: 10px;">
+              <span>Pickup Slot: <strong>{{ ord.pickup_slot_time|date:"g:i A" }}</strong></span>
+              <span>Paid: <strong style="color: #0CA678;">₹{{ ord.total_amount|floatformat:2 }}</strong></span>
+            </div>
+
+            <!-- Items -->
+            <div style="font-size: 0.85rem; color: var(--text-muted);">
+              {% for it in ord.items.all %}
+                {{ it.quantity }}x {{ it.item_name_snapshot }}{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            </div>
+
+            <div style="margin-top: 12px; text-align: right;">
+              <a href="{% url 'order_confirmation' token=ord.confirmation_token|default:ord.token %}" style="font-size: 0.82rem; color: var(--primary); font-weight: 700; text-decoration: none;">
+                View Order Details &rarr;
+              </a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 32px 16px; text-align: center;">
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          No active orders found for this session.
+        </p>
+      </div>
+    {% endif %}
+  {% elif not is_authorized_session and not error_message %}
+    <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 32px 16px; text-align: center;">
+      <div style="font-size: 2rem; margin-bottom: 8px;">🛡️</div>
+      <h3 style="font-family: var(--font-heading); font-size: 1.2rem; margin-bottom: 6px;">Secure Order Access</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; max-width: 440px; margin: 0 auto;">
+        For your privacy, online orders are linked directly to the device where they were booked. Enter your mobile number to search your device's active orders.
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

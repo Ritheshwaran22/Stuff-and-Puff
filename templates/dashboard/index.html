@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Order Operations | Stuff &amp; Puff Chengalpattu</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/street-cart.css' %}">
+  <style>
+    body { padding-bottom: 40px; background: #F4EFE6; }
+    .dash-header { background: #181614; color: #FFF; padding: 14px 16px; border-bottom: 3px solid var(--primary); }
+    .dash-header-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .dash-grid { max-width: 1200px; margin: 20px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 24px; }
+    .control-card { background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm); display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; }
+    .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+    .metric-box { background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; text-align: center; box-shadow: var(--shadow-sm); }
+    .metric-box.highlight { border-color: var(--primary); background: #FFF4E6; }
+    .metric-val { font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
+    .metric-lbl { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-top: 4px; }
+    .order-card { background: #FFF; border: 2px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow-sm); }
+    .order-card.ready { border-color: #0CA678; background: #F8FFF9; }
+    .order-card.preparing { border-color: #F59F00; background: #FFFCF2; }
+    .order-token { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 800; color: #181614; line-height: 1; }
+    .btn-status { padding: 8px 14px; font-weight: 700; font-size: 0.85rem; border-radius: var(--radius-sm); border: none; cursor: pointer; }
+    .btn-prep { background: #FFE066; color: #7B4B00; }
+    .btn-ready { background: #0CA678; color: #FFF; }
+    .btn-comp { background: #181614; color: #FFF; }
+    .btn-prep:hover { background: #FFD43B; }
+    .btn-ready:hover { background: #099268; }
+    .btn-comp:hover { background: #342F2C; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Nav -->
+  <div class="dash-header">
+    <div class="dash-header-inner">
+      <div style="display: flex; align-items: baseline; gap: 10px;">
+        <span style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700;">STUFF &amp; PUFF</span>
+        <span style="color: var(--accent-yellow); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em;">STAFF DASHBOARD</span>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <a href="/" target="_blank" style="color: #D6D3D1; text-decoration: none; font-size: 0.85rem; font-weight: 600;">View Customer Site &rarr;</a>
+        <a href="/admin/" style="color: #D6D3D1; text-decoration: none; font-size: 0.85rem; font-weight: 600;">Django Admin</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-grid">
+
+    <!-- Flash Messages -->
+    {% if messages %}
+      <div>
+        {% for message in messages %}
+          <div style="padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 8px; font-weight: 600; font-size: 0.88rem; {% if message.tags == 'success' %}background:#E6FCF5; color:#0CA678; border:1px solid #C3FAE8;{% else %}background:#FFF3BF; color:#F08C00; border:1px solid #FFE066;{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Shop & Online Ordering Independent Toggles -->
+    <div class="control-card">
+      <div>
+        <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Shop Controls</div>
+        <div style="display: flex; gap: 16px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
+          <!-- Shop Open/Close -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight: 700; font-size: 0.95rem;">Shop Status:</span>
+            {% if shop_settings.shop_open %}
+              <span style="background: #E6FCF5; color: #0CA678; font-weight: 800; padding: 4px 10px; border-radius: 9999px; font-size: 0.82rem;">🟢 OPEN</span>
+            {% else %}
+              <span style="background: #FFE3E3; color: #E03131; font-weight: 800; padding: 4px 10px; border-radius: 9999px; font-size: 0.82rem;">🔴 CLOSED</span>
+            {% endif %}
+          </div>
+
+          <!-- Online Ordering -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight: 700; font-size: 0.95rem;">Online Ordering:</span>
+            {% if shop_settings.online_orders_enabled %}
+              <span style="background: #E6FCF5; color: #0CA678; font-weight: 800; padding: 4px 10px; border-radius: 9999px; font-size: 0.82rem;">🟢 ACCEPTING</span>
+            {% else %}
+              <span style="background: #FFF3BF; color: #F08C00; font-weight: 800; padding: 4px 10px; border-radius: 9999px; font-size: 0.82rem;">⏸️ PAUSED</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <form method="POST" action="{% url 'toggle_shop_status' %}">
+          {% csrf_token %}
+          <button type="submit" style="padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-weight: 700; font-size: 0.85rem; cursor: pointer; background: {% if shop_settings.shop_open %}#FFF5F5; color:#E03131{% else %}#E6FCF5; color:#0CA678{% endif %};">
+            {% if shop_settings.shop_open %}Close Shop{% else %}Open Shop{% endif %}
+          </button>
+        </form>
+
+        <form method="POST" action="{% url 'toggle_online_ordering' %}">
+          {% csrf_token %}
+          <button type="submit" style="padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-weight: 700; font-size: 0.85rem; cursor: pointer; background: {% if shop_settings.online_orders_enabled %}#FFF9DB; color:#F08C00{% else %}#E6FCF5; color:#0CA678{% endif %};">
+            {% if shop_settings.online_orders_enabled %}Pause Online Orders{% else %}Resume Online Orders{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Today's Operations Stats -->
+    <div class="metric-grid">
+      <div class="metric-box highlight">
+        <div class="metric-val" style="color: var(--primary);">₹{{ total_sales|floatformat:0 }}</div>
+        <div class="metric-lbl">Today's Sales</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val">{{ total_orders }}</div>
+        <div class="metric-lbl">Total Orders</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val" style="color: #1971C2;">{{ confirmed_count }}</div>
+        <div class="metric-lbl">Confirmed</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val" style="color: #F08C00;">{{ preparing_count }}</div>
+        <div class="metric-lbl">🔥 Preparing</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val" style="color: #0CA678;">{{ ready_count }}</div>
+        <div class="metric-lbl">🟢 Ready</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val" style="color: #868E96;">{{ completed_count }}</div>
+        <div class="metric-lbl">Completed</div>
+      </div>
+    </div>
+
+    <!-- Orders Management Section -->
+    <div>
+      <h2 style="font-family: var(--font-heading); font-size: 1.5rem; text-transform: uppercase; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: baseline;">
+        <span>Live Orders ({{ today_orders.count }})</span>
+        <span style="font-family: var(--font-body); font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">Auto-refreshes on actions</span>
+      </h2>
+
+      {% if today_orders %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px;">
+          {% for order in today_orders %}
+            <div class="order-card {% if order.order_status == 'READY' %}ready{% elif order.order_status == 'PREPARING' %}preparing{% endif %}" id="order-card-{{ order.id }}">
+              
+              <!-- Card Header -->
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <span style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">PICKUP TOKEN</span>
+                  <div class="order-token">{{ order.token }}</div>
+                  <div style="font-size: 0.8rem; color: var(--text-muted);">
+                    Order #{{ order.order_number }} &bull; {{ order.created_at|date:"g:i A" }}
+                  </div>
+                </div>
+
+                <div style="text-align: right;">
+                  <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">PICKUP TIME</span>
+                  <div style="font-weight: 800; font-size: 1.15rem; color: var(--text-main);">
+                    {{ order.pickup_slot_time|date:"g:i A" }}
+                  </div>
+                  <div style="font-size: 0.85rem; font-weight: 700; color: #0CA678;">
+                    ₹{{ order.total_amount|floatformat:2 }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Customer Info -->
+              <div style="background: var(--bg-subtle); padding: 8px 10px; border-radius: var(--radius-sm); font-size: 0.85rem; display: flex; justify-content: space-between;">
+                <span><strong>{{ order.customer.name }}</strong></span>
+                <span>📞 {{ order.customer.mobile }}</span>
+              </div>
+
+              <!-- Items Breakdown -->
+              <div style="font-size: 0.88rem; display: flex; flex-direction: column; gap: 6px; padding: 4px 0;">
+                {% for item in order.items.all %}
+                  <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <div>
+                      <strong style="color: var(--text-main);">{{ item.quantity }}x {{ item.item_name_snapshot }}</strong>
+                      {% if item.addons.all %}
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-left: 10px;">
+                          {% for a in item.addons.all %}+ {{ a.addon_name_snapshot }} {% endfor %}
+                        </div>
+                      {% endif %}
+                      {% if item.parcel_quantity > 0 %}
+                        <div style="font-size: 0.75rem; color: #E8590C; font-weight: 700; margin-left: 10px;">
+                          📦 TAKEAWAY PARCEL ({{ item.parcel_quantity }}x)
+                        </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+
+              <!-- Status Badge & Progression Buttons -->
+              <div style="border-top: 1px dashed var(--border-color); padding-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between;">
+                <div>
+                  <span style="font-size: 0.75rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; {% if order.order_status == 'READY' %}background:#0CA678; color:#FFF;{% elif order.order_status == 'PREPARING' %}background:#F08C00; color:#FFF;{% elif order.order_status == 'COMPLETED' %}background:#868E96; color:#FFF;{% else %}background:#1971C2; color:#FFF;{% endif %}">
+                    {{ order.order_status }}
+                  </span>
+                  {% if order.ready_email_sent %}
+                    <span style="font-size: 0.7rem; color: #0CA678; font-weight: 700; margin-left: 4px;">Email Sent ✓</span>
+                  {% endif %}
+                </div>
+
+                <div style="display: flex; gap: 6px;">
+                  {% if order.order_status == 'CONFIRMED' %}
+                    <form method="POST" action="{% url 'update_order_status' order.id %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="status" value="PREPARING">
+                      <button type="submit" class="btn-status btn-prep">START PREPARING</button>
+                    </form>
+                  {% endif %}
+
+                  {% if order.order_status in 'CONFIRMED,PREPARING' %}
+                    <form method="POST" action="{% url 'update_order_status' order.id %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="status" value="READY">
+                      <button type="submit" class="btn-status btn-ready">MARK READY</button>
+                    </form>
+                  {% endif %}
+
+                  {% if order.order_status == 'READY' %}
+                    <form method="POST" action="{% url 'update_order_status' order.id %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="status" value="COMPLETED">
+                      <button type="submit" class="btn-status btn-comp">COLLECTED ✓</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Emergency Refund option if needed -->
+              {% if order.payment_status == 'PAID' and order.order_status in 'CONFIRMED,PREPARING' %}
+                <div style="text-align: right; margin-top: 4px;">
+                  <form method="POST" action="{% url 'emergency_closure_refund' order.id %}" onsubmit="return confirm('Initiate full refund of ₹{{ order.total_amount }} for order {{ order.token }}?');">
+                    {% csrf_token %}
+                    <button type="submit" style="background:none; border:none; color:#C92A2A; font-size:0.75rem; text-decoration:underline; cursor:pointer;">
+                      Emergency Refund Order
+                    </button>
+                  </form>
+                </div>
+              {% endif %}
+
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 36px 16px; text-align: center; color: var(--text-muted);">
+          <div style="font-size: 2rem; margin-bottom: 6px;">📋</div>
+          <p style="font-weight: 600;">No orders received yet today.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Quick Sold-Out / Availability Menu Controller -->
+    <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm);">
+      <h3 style="font-family: var(--font-heading); font-size: 1.3rem; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+        Quick Item Availability (Sold-Out Controller)
+      </h3>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 14px;">
+        Single-click toggle to mark items sold out during rush hours. Existing paid orders remain unaffected.
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px;">
+        {% for item in all_menu_items %}
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border: 1px solid {% if item.is_available %}#E7E0D6{% else %}#FFA8A8{% endif %}; border-radius: var(--radius-sm); background: {% if item.is_available %}#FBF9F5{% else %}#FFF5F5{% endif %};">
+            <div>
+              <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-main);">{{ item.name }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">{{ item.category.name }} &bull; ₹{{ item.price|floatformat:0 }}</div>
+            </div>
+
+            <form method="POST" action="{% url 'toggle_item_availability' item.id %}">
+              {% csrf_token %}
+              <button type="submit" style="padding: 4px 8px; border-radius: var(--radius-sm); font-size: 0.72rem; font-weight: 800; cursor: pointer; border: 1px solid; {% if item.is_available %}background:#E6FCF5; color:#0CA678; border-color:#63E6BE;{% else %}background:#FFE3E3; color:#C92A2A; border-color:#FFA8A8;{% endif %}">
+                {% if item.is_available %}AVAILABLE{% else %}SOLD OUT{% endif %}
+              </button>
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

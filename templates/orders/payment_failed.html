@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Payment Failed | {{ business_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 40px 16px; max-width: 540px; text-align: center;">
+  <div style="background: #FFF; border: 1px solid #FFA8A8; border-radius: var(--radius-lg); padding: 32px 20px; box-shadow: var(--shadow-sm);">
+    <div style="font-size: 3rem; margin-bottom: 12px; color: #E03131;">❌</div>
+    <h1 style="font-family: var(--font-heading); font-size: 1.8rem; text-transform: uppercase; color: #C92A2A; margin-bottom: 8px;">
+      Payment Not Confirmed
+    </h1>
+
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 16px; line-height: 1.5;">
+      {{ error_message|default:"Payment verification was not successful. Your order was not confirmed and no pickup token was generated." }}
+    </p>
+
+    <div style="background: #F8F9FA; border-radius: var(--radius-sm); padding: 12px; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 24px; text-align: left;">
+      <strong>Did money get deducted?</strong><br>
+      If an amount was debited from your bank/UPI app, it will be automatically reconciled and refunded to your account within 2-5 banking days.
+    </div>
+
+    <div style="display: flex; gap: 10px; justify-content: center;">
+      <a href="/checkout/" class="hero-cta-btn" style="text-decoration: none; padding: 10px 20px; font-size: 1rem;">
+        TRY AGAIN
+      </a>
+      <a href="/#menu" style="display: inline-flex; align-items: center; padding: 10px 18px; border: 1px solid var(--border-color); border-radius: var(--radius-md); text-decoration: none; color: var(--text-main); font-weight: 700; font-size: 0.9rem;">
+        RETURN TO MENU
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

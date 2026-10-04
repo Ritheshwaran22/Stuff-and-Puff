@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Complete Online Payment | {{ business_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 32px 16px 60px; max-width: 540px;">
+  <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px 20px; box-shadow: var(--shadow-md);">
+    
+    <!-- Header -->
+    <div style="text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 18px;">
+      <div style="font-family: var(--font-heading); font-size: 1.3rem; letter-spacing: 0.04em;">
+        STUFF <span style="color: var(--primary);">&amp;</span> PUFF
+      </div>
+      <div style="font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-yellow); font-weight: 700;">
+        CHENGALPATTU OUTLET
+      </div>
+      <div style="margin-top: 14px; font-size: 0.9rem; color: var(--text-muted);">
+        Order #{{ order.order_number }} &bull; Pickup at <strong>{{ order.pickup_slot_time|date:"g:i A" }}</strong>
+      </div>
+      <div style="font-size: 2.2rem; font-weight: 800; color: var(--text-main); margin-top: 4px;">
+        ₹{{ order.total_amount|floatformat:2 }}
+      </div>
+    </div>
+
+    <!-- Payment Methods Information -->
+    <div style="background: #F8F9FA; border: 1px solid #E9ECEF; border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <strong style="font-size: 0.88rem; color: #495057;">CASHFREE PAYMENT GATEWAY</strong>
+        <span style="background: #E3FAFC; color: #0C8599; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px;">
+          {% if cashfree_environment == 'production' %}SECURE CHECKOUT{% else %}SANDBOX TEST MODE{% endif %}
+        </span>
+      </div>
+
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.45;">
+        Complete payment via UPI or Net Banking. Your order and pickup token are issued only after server-side verification:
+      </p>
+
+      <!-- Supported Methods: UPI and Net Banking -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600;">
+          <span>📱</span> <span>UPI &bull; Google Pay / PhonePe / Paytm / BHIM</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600;">
+          <span>🏦</span> <span>Net Banking &bull; SBI, HDFC, ICICI, Axis &amp; 50+ Banks</span>
+        </div>
+      </div>
+    </div>
+
+    {% if payment.payment_session_id and payment.gateway_provider != 'SANDBOX' %}
+      <!-- CASHFREE HOSTED / SDK CHECKOUT -->
+      <div style="text-align: center; padding: 10px 0 20px;">
+        <button type="button" class="hero-cta-btn" id="cashfreePayBtn" style="width: 100%; padding: 14px; font-size: 1.05rem;">
+          PAY ₹{{ order.total_amount|floatformat:2 }} WITH CASHFREE &rarr;
+        </button>
+      </div>
+
+      <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+      <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          const cashfree = Cashfree({
+            mode: "{{ cashfree_environment }}" === "production" ? "production" : "sandbox"
+          });
+          const payBtn = document.getElementById('cashfreePayBtn');
+          if (payBtn) {
+            payBtn.addEventListener('click', function (e) {
+              e.preventDefault();
+              cashfree.checkout({
+                paymentSessionId: "{{ payment.payment_session_id }}",
+                redirectTarget: "_self"
+              });
+            });
+          }
+        });
+      </script>
+
+    {% else %}
+      <!-- SANDBOX / SIMULATOR GATEWAY INTERFACE (Development & Testing) -->
+      <form action="/orders/verify/{{ order.id }}/" method="POST" style="margin-bottom: 10px;">
+        {% csrf_token %}
+        <input type="hidden" name="gateway_payment_id" value="cf_pay_sim_{{ order.id }}_{% now 'U' %}">
+        <button type="submit" class="hero-cta-btn" id="simulateSuccessBtn" style="width: 100%; padding: 14px; font-size: 1.05rem;">
+          AUTHORIZE &amp; PAY ₹{{ order.total_amount|floatformat:2 }} &rarr;
+        </button>
+      </form>
+
+      <form action="/orders/verify/{{ order.id }}/" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="simulate_fail" value="true">
+        <button type="submit" id="simulateFailBtn" style="width: 100%; background: none; border: 1px dashed #FFA8A8; color: #E03131; padding: 8px; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.82rem; cursor: pointer;">
+          Simulate Payment Failure / Cancel
+        </button>
+      </form>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

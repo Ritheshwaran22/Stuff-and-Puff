@@ -1,0 +1,390 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <h1 class="hero-headline">
+        MOMOS. <span>WAFFLES.</span> BUNS.
+      </h1>
+      <p class="hero-subtitle">Freshly prepared for pickup.</p>
+      
+      <div class="hero-meta">
+        {% if is_shop_open and is_online_orders_enabled %}
+          <span class="hero-badge highlight">
+            <span class="status-dot open"></span> OPEN FOR PICKUP
+          </span>
+        {% elif not is_shop_open %}
+          <span class="hero-badge" style="background:#491212; color:#FFA8A8;">
+            <span class="status-dot closed"></span> SHOP CLOSED
+          </span>
+        {% else %}
+          <span class="hero-badge" style="background:#422800; color:#FFE066;">
+            <span class="status-dot paused"></span> ONLINE ORDERS PAUSED
+          </span>
+        {% endif %}
+        
+        <span class="hero-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          Today: {{ business_hours }}
+        </span>
+        <span class="hero-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          {{ business_location }}
+        </span>
+      </div>
+    </div>
+
+    <div>
+      {% if is_shop_open and is_online_orders_enabled %}
+        <a href="#menu" class="hero-cta-btn" id="heroOrderBtn">
+          ORDER FOR PICKUP &darr;
+        </a>
+      {% elif not is_shop_open %}
+        <button type="button" class="hero-cta-btn disabled" disabled>
+          SHOP CLOSED (Opens at 5:00 PM)
+        </button>
+      {% else %}
+        <button type="button" class="hero-cta-btn disabled" disabled>
+          ONLINE ORDERS PAUSED
+        </button>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- Category Sticky Tab Nav -->
+<div class="category-nav-wrapper">
+  <nav class="category-nav" aria-label="Menu categories">
+    {% for category in categories %}
+      <a href="#cat-{{ category.slug }}" class="category-tab {% if forloop.first %}active{% endif %}">
+        {{ category.name }} ({{ category.items.count }})
+      </a>
+    {% endfor %}
+  </nav>
+</div>
+
+<!-- Menu Section -->
+<section class="menu-section" id="menu">
+  {% for category in categories %}
+    <div class="category-block" id="cat-{{ category.slug }}">
+      <div class="category-title">
+        <span>{{ category.name }}</span>
+        <span class="category-count">{{ category.items.count }} items</span>
+      </div>
+
+      <div class="menu-grid">
+        {% for item in category.items.all %}
+          <div class="menu-card {% if not item.is_available %}sold-out{% endif %}" id="item-card-{{ item.id }}">
+            <div>
+              <div class="card-top">
+                <h3 class="item-name">{{ item.name }}</h3>
+                <div class="item-price">₹{{ item.price|floatformat:0 }}</div>
+              </div>
+
+              {% if item.description %}
+                <p class="item-desc">{{ item.description }}</p>
+              {% endif %}
+
+              <div class="item-badges">
+                {% if not item.is_available %}
+                  <span class="badge-sold-out">SOLD OUT</span>
+                {% endif %}
+
+                {% if item.spice_level > 0 %}
+                  <span class="badge-spice" title="Spice Level: {{ item.spice_level }}">
+                    {% for _ in "x"|rjust:item.spice_level %}🌶️{% endfor %}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="card-actions">
+              {% if item.is_available and is_shop_open and is_online_orders_enabled %}
+                {% if item.applicable_addons.count > 0 %}
+                  <button type="button" class="btn-add js-customize-item"
+                          data-item-id="{{ item.id }}"
+                          data-name="{{ item.name }}"
+                          data-price="{{ item.price }}"
+                          data-category="{{ item.category.slug }}">
+                    CUSTOMIZE &amp; ADD +
+                  </button>
+                {% else %}
+                  <button type="button" class="btn-add js-quick-add-item"
+                          data-item-id="{{ item.id }}"
+                          data-name="{{ item.name }}"
+                          data-price="{{ item.price }}">
+                    ADD TO CART +
+                  </button>
+                {% endif %}
+              {% elif not item.is_available %}
+                <button type="button" class="btn-add" disabled>SOLD OUT</button>
+              {% elif not is_shop_open %}
+                <button type="button" class="btn-add" disabled>SHOP CLOSED</button>
+              {% else %}
+                <button type="button" class="btn-add" disabled>ORDERS PAUSED</button>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</section>
+
+<!-- Item Customization Modal (Sauces / Waffle Add-ons / Parcel) -->
+<div class="modal-overlay" id="customizeModal" role="dialog" aria-modal="true" aria-labelledby="customModalTitle">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="customModalTitle">Customize Item</h2>
+        <div id="customModalItemPrice" style="font-weight: 700; color: var(--primary); font-size: 1.05rem;">₹0.00</div>
+      </div>
+      <button type="button" class="modal-close js-close-customize" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Addons / Sauces List -->
+      <div id="customAddonsContainer">
+        <h4 style="font-size: 0.92rem; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 8px; color: var(--text-main);" id="addonsHeading">
+          Choose Sauces / Add-Ons
+        </h4>
+        <div id="customAddonsList" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Parcel Packaging Checkbox -->
+      <div style="background: var(--bg-subtle); padding: 12px; border-radius: var(--radius-md); margin-top: 8px;">
+        <label style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 0.92rem; cursor: pointer;">
+          <input type="checkbox" id="modalParcelCheckbox" style="width: 18px; height: 18px; accent-color: var(--primary);">
+          <span>Pack as Parcel / Takeaway (+₹5/item)</span>
+        </label>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; margin-left: 28px;">
+          Food packaged in takeaway containers. Charge is ₹5 per quantity.
+        </p>
+      </div>
+
+      <!-- Quantity Selector -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
+        <span style="font-weight: 700; font-size: 0.95rem;">Quantity</span>
+        <div class="qty-control">
+          <button type="button" class="qty-btn" id="modalQtyDec">−</button>
+          <span class="qty-val" id="modalQtyVal">1</span>
+          <button type="button" class="qty-btn" id="modalQtyInc">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="hero-cta-btn" id="modalConfirmAddBtn" style="width: 100%;">
+        ADD TO CART &bull; <span id="modalFinalPrice">₹0.00</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Location Section -->
+<section class="location-section" id="location">
+  <div class="location-box">
+    <div>
+      <h2 class="location-title">{{ business_name }}</h2>
+      <p class="location-address">
+        <strong>{{ business_location }}</strong><br>
+        {{ business_location_details }}
+      </p>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 6px;">
+        Pickup Hours: <strong>{{ business_hours }}</strong> (Everyday)
+      </p>
+    </div>
+
+    <div>
+      <a href="https://www.google.com/maps/search/?api=1&query=GH+Bus+Stop+Chengalpattu" target="_blank" rel="noopener" class="btn-directions" id="getDirectionsBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+        GET DIRECTIONS
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Addons Database Map for Quick Modal Population -->
+<script>
+  const ITEM_ADDONS_MAP = {
+    {% for item in all_items_with_addons %}
+      "{{ item.id }}": [
+        {% for addon in item.applicable_addons.all %}
+          {% if addon.is_available %}
+            {
+              id: {{ addon.id }},
+              name: "{{ addon.name|escapejs }}",
+              price: {{ addon.price }},
+              spice: {{ addon.spice_level }},
+              type: "{{ addon.category_type }}"
+            },
+          {% endif %}
+        {% endfor %}
+      ],
+    {% endfor %}
+  };
+
+  // Customization Modal State
+  let currentCustomItem = null;
+  let currentModalQty = 1;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('customizeModal');
+    const closeBtn = document.querySelector('.js-close-customize');
+    const qtyVal = document.getElementById('modalQtyVal');
+    const qtyInc = document.getElementById('modalQtyInc');
+    const qtyDec = document.getElementById('modalQtyDec');
+    const parcelCb = document.getElementById('modalParcelCheckbox');
+    const confirmBtn = document.getElementById('modalConfirmAddBtn');
+
+    function calculateModalTotal() {
+      if (!currentCustomItem) return 0;
+      const basePrice = parseFloat(currentCustomItem.price);
+      let addonsSum = 0;
+
+      const checkedAddons = document.querySelectorAll('.modal-addon-cb:checked');
+      checkedAddons.forEach(cb => {
+        addonsSum += parseFloat(cb.dataset.price) || 0;
+      });
+
+      const lineBaseAndAddons = (basePrice + addonsSum) * currentModalQty;
+      const parcelCharge = parcelCb.checked ? (currentModalQty * 5.0) : 0;
+      const total = lineBaseAndAddons + parcelCharge;
+
+      document.getElementById('modalFinalPrice').textContent = `₹${total.toFixed(2)}`;
+      return total;
+    }
+
+    // Open Customize Modal
+    document.querySelectorAll('.js-customize-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const itemId = btn.dataset.itemId;
+        const name = btn.dataset.name;
+        const price = parseFloat(btn.dataset.price);
+        const category = btn.dataset.category;
+
+        currentCustomItem = { id: itemId, name, price, category };
+        currentModalQty = 1;
+        qtyVal.textContent = '1';
+        parcelCb.checked = false;
+
+        document.getElementById('customModalTitle').textContent = name;
+        document.getElementById('customModalItemPrice').textContent = `Base Price: ₹${price.toFixed(2)}`;
+
+        const addonsList = document.getElementById('customAddonsList');
+        const availableAddons = ITEM_ADDONS_MAP[itemId] || [];
+
+        if (category === 'momos') {
+          document.getElementById('addonsHeading').textContent = "Select Pan Fry Sauces / Preps (₹50 each)";
+        } else if (category === 'waffles') {
+          document.getElementById('addonsHeading').textContent = "Select Waffle Add-ons";
+        } else {
+          document.getElementById('addonsHeading').textContent = "Available Add-ons";
+        }
+
+        let addonsHtml = '';
+        availableAddons.forEach(addon => {
+          let spiceIcons = '';
+          if (addon.spice > 0) {
+            spiceIcons = ' ' + '🌶️'.repeat(addon.spice);
+          }
+          addonsHtml += `
+            <label style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:#F8F9FA; border:1px solid #E9ECEF; border-radius:8px; cursor:pointer;">
+              <span style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.88rem;">
+                <input type="checkbox" class="modal-addon-cb" data-id="${addon.id}" data-name="${addon.name}" data-price="${addon.price}" style="width:16px; height:16px; accent-color:#E8590C;">
+                ${addon.name}${spiceIcons}
+              </span>
+              <span style="font-weight:700; color:#495057; font-size:0.88rem;">+₹${addon.price.toFixed(0)}</span>
+            </label>
+          `;
+        });
+        addonsList.innerHTML = addonsHtml;
+
+        // Attach event listeners to addon checkboxes
+        document.querySelectorAll('.modal-addon-cb').forEach(cb => {
+          cb.addEventListener('change', calculateModalTotal);
+        });
+
+        calculateModalTotal();
+        modal.classList.add('active');
+      });
+    });
+
+    // Quick Add for items without addons
+    document.querySelectorAll('.js-quick-add-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const itemId = btn.dataset.itemId;
+        const name = btn.dataset.name;
+        const price = parseFloat(btn.dataset.price);
+
+        window.SPCart.addItem({
+          id: itemId,
+          name: name,
+          price: price,
+          quantity: 1,
+          isParcel: false,
+          addons: []
+        });
+      });
+    });
+
+    // Modal Qty Buttons
+    qtyInc.addEventListener('click', () => {
+      currentModalQty++;
+      qtyVal.textContent = currentModalQty;
+      calculateModalTotal();
+    });
+
+    qtyDec.addEventListener('click', () => {
+      if (currentModalQty > 1) {
+        currentModalQty--;
+        qtyVal.textContent = currentModalQty;
+        calculateModalTotal();
+      }
+    });
+
+    parcelCb.addEventListener('change', calculateModalTotal);
+
+    // Confirm Add to Cart
+    confirmBtn.addEventListener('click', () => {
+      if (!currentCustomItem) return;
+
+      const selectedAddons = [];
+      document.querySelectorAll('.modal-addon-cb:checked').forEach(cb => {
+        selectedAddons.push({
+          id: cb.dataset.id,
+          name: cb.dataset.name,
+          price: parseFloat(cb.dataset.price)
+        });
+      });
+
+      window.SPCart.addItem({
+        id: currentCustomItem.id,
+        name: currentCustomItem.name,
+        price: currentCustomItem.price,
+        quantity: currentModalQty,
+        isParcel: parcelCb.checked,
+        addons: selectedAddons
+      });
+
+      modal.classList.remove('active');
+    });
+
+    // Close Modal
+    function closeModal() {
+      modal.classList.remove('active');
+    }
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+  });
+</script>
+{% endblock %}

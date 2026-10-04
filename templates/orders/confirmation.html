@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order Confirmed #{{ order.order_number }} | {{ business_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 32px 16px 60px; max-width: 580px;">
+  <div style="background: #FFF; border: 2px solid #0CA678; border-radius: var(--radius-lg); padding: 28px 20px; box-shadow: var(--shadow-md); text-align: center;">
+
+    <!-- Success Badge -->
+    <div style="width: 56px; height: 56px; border-radius: 50%; background: #E6FCF5; color: #0CA678; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 12px;">
+      ✓
+    </div>
+
+    <h1 style="font-family: var(--font-heading); font-size: 2rem; color: #0CA678; letter-spacing: 0.02em; text-transform: uppercase; margin-bottom: 4px;">
+      ORDER CONFIRMED
+    </h1>
+    <div style="font-weight: 700; font-size: 1rem; color: var(--text-muted);">
+      Order #{{ order.order_number }}
+    </div>
+
+    <!-- Prominent Token Box -->
+    <div style="background: #181614; color: #FFF; border-radius: var(--radius-md); padding: 20px; margin: 20px 0; border: 2px dashed #E8590C;">
+      <div style="font-size: 0.82rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-yellow); font-weight: 700; margin-bottom: 4px;">
+        YOUR PICKUP TOKEN
+      </div>
+      <div style="font-family: var(--font-heading); font-size: 3.2rem; letter-spacing: 0.06em; line-height: 1; color: #FFF; font-weight: 800;" id="confirmedOrderToken">
+        {{ order.token }}
+      </div>
+      <div style="font-size: 0.85rem; color: #D6D3D1; margin-top: 8px;">
+        Show this token to our staff at the cart
+      </div>
+    </div>
+
+    <!-- Key Order Details -->
+    <div style="background: #F8F9FA; border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px; text-align: left; display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">
+        <span style="color: var(--text-muted);">Pickup Time:</span>
+        <strong style="color: var(--text-main); font-size: 1.05rem;">{{ order.pickup_slot_time|date:"g:i A" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">
+        <span style="color: var(--text-muted);">Customer:</span>
+        <strong>{{ order.customer.name }} ({{ order.customer.mobile }})</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">
+        <span style="color: var(--text-muted);">Amount Paid:</span>
+        <strong style="color: #0CA678; font-size: 1.1rem;">₹{{ order.total_amount|floatformat:2 }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted);">Current Status:</span>
+        <span style="background: #E6FCF5; color: #0CA678; font-weight: 700; padding: 2px 8px; border-radius: 9999px; font-size: 0.82rem;">
+          {{ order.get_order_status_display|upper }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <p style="font-weight: 600; font-size: 0.95rem; color: var(--text-main); margin-bottom: 8px;">
+      Your order has been confirmed. We will prepare it for your selected pickup time.
+    </p>
+    <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 18px;">
+      An email confirmation has been dispatched{% if order.customer.email %} to <strong>{{ order.customer.email }}</strong>{% endif %}. You will also receive an email notification as soon as your order is marked <strong>READY</strong>.
+    </p>
+
+    <!-- Grace Period Alert -->
+    <div style="background: #FFF9DB; border-left: 4px solid #F59F00; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.82rem; color: #664D03; text-align: left; margin-bottom: 20px; line-height: 1.45;">
+      <strong>Pickup Reminder:</strong> Please collect your order around your selected pickup time. A 15-minute grace period is provided; after that, food freshness/hotness may not be guaranteed.
+    </div>
+
+    <!-- Items Ordered Breakdown -->
+    <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-bottom: 20px; text-align: left;">
+      <h3 style="font-size: 0.92rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">Items Ordered</h3>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        {% for item in order.items.all %}
+          <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+            <div>
+              <strong>{{ item.quantity }}x {{ item.item_name_snapshot }}</strong>
+              {% if item.addons.all %}
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-left: 12px;">
+                  {% for a in item.addons.all %}+ {{ a.addon_name_snapshot }} {% endfor %}
+                </div>
+              {% endif %}
+              {% if item.parcel_quantity > 0 %}
+                <div style="font-size: 0.75rem; color: #E8590C; margin-left: 12px; font-weight: 600;">
+                  Takeaway Parcel ({{ item.parcel_quantity }}x)
+                </div>
+              {% endif %}
+            </div>
+            <span style="font-weight: 700;">₹{{ item.line_total|floatformat:2 }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Directions and Home Buttons -->
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <a href="https://www.google.com/maps/search/?api=1&query=GH+Bus+Stop+Chengalpattu" target="_blank" rel="noopener" class="btn-directions" style="justify-content: center; padding: 14px; font-size: 1rem;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+        GET DIRECTIONS TO PUSHCART
+      </a>
+
+      <a href="/" style="color: var(--text-muted); text-decoration: none; font-size: 0.88rem; font-weight: 700; padding: 8px;">
+        &larr; Back to Home
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

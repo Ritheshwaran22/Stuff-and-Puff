@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Privacy Policy | {{ business_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 40px 16px; max-width: 760px;">
+  <h1 style="font-family: var(--font-heading); font-size: 2rem; margin-bottom: 16px;">PRIVACY POLICY</h1>
+  <p style="color: var(--text-muted); margin-bottom: 24px;">Stuff &amp; Puff | Chengalpattu (Near GH Bus Stop, Chengalpattu)</p>
+
+  <div style="background:#FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 24px; line-height: 1.7;">
+    <h3 style="margin-bottom: 8px;">1. Information We Collect</h3>
+    <p style="margin-bottom: 16px;">To process pre-booking takeaway orders, we only collect your Name and Mobile Number, along with selected food items and pickup time. We do not require account passwords or store unnecessary personal data.</p>
+
+    <h3 style="margin-bottom: 8px;">2. Purpose of Collection</h3>
+    <p style="margin-bottom: 16px;">Your mobile number is strictly used to identify your order, generate your unique pickup token (e.g. SP1001), and verify order collection at our pickup counter.</p>
+
+    <h3 style="margin-bottom: 8px;">3. Payment Information</h3>
+    <p style="margin-bottom: 16px;">All online payments are securely processed through authorized Indian payment gateways supporting UPI and Net Banking. We never store bank accounts, PINs, or sensitive payment credentials on our servers.</p>
+
+    <h3 style="margin-bottom: 8px;">4. Data Sharing</h3>
+    <p>We do not sell, rent, or trade your personal information to third parties.</p>
+  </div>
+</div>
+{% endblock %}

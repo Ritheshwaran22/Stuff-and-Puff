@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout &amp; Pickup Time | {{ business_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 16px 60px; max-width: 680px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+    <h1 style="font-family: var(--font-heading); font-size: 1.85rem; text-transform: uppercase; letter-spacing: 0.02em;">
+      Pickup Checkout
+    </h1>
+    <a href="/#menu" style="color: var(--text-muted); text-decoration: none; font-size: 0.88rem; font-weight: 600;">
+      &larr; Add more items
+    </a>
+  </div>
+
+  <div id="checkoutEmptyWarning" style="display: none; background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 32px 16px; text-align: center;">
+    <div style="font-size: 2.5rem; margin-bottom: 8px;">🛒</div>
+    <h3>Your cart is empty</h3>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; margin-bottom: 16px;">Please choose items from our menu before proceeding to checkout.</p>
+    <a href="/#menu" class="hero-cta-btn" style="text-decoration: none;">BROWSE MENU</a>
+  </div>
+
+  <form id="checkoutForm" style="display: flex; flex-direction: column; gap: 18px;">
+    {% csrf_token %}
+
+    <!-- 1. Customer Details -->
+    <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm);">
+      <h2 style="font-family: var(--font-heading); font-size: 1.25rem; text-transform: uppercase; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+        1. Customer Details
+      </h2>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div>
+          <label for="customerName" style="display: block; font-weight: 700; font-size: 0.88rem; margin-bottom: 4px;">
+            Full Name <span style="color: #E03131;">*</span>
+          </label>
+          <input type="text" id="customerName" name="customer_name" required placeholder="Enter your name"
+                 style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.95rem;">
+        </div>
+
+        <div>
+          <label for="customerMobile" style="display: block; font-weight: 700; font-size: 0.88rem; margin-bottom: 4px;">
+            Mobile Number <span style="color: #E03131;">*</span> (for order identification)
+          </label>
+          <input type="tel" id="customerMobile" name="customer_mobile" required pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number"
+                 style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.95rem;">
+          <span style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; display: block;">
+            Your mobile number is used to identify your order and pickup token at the counter.
+          </span>
+        </div>
+
+        <div>
+          <label for="customerEmail" style="display: block; font-weight: 700; font-size: 0.88rem; margin-bottom: 4px;">
+            Email Address <span style="font-weight: normal; color: var(--text-muted); font-size: 0.8rem;">(Optional &mdash; for email updates)</span>
+          </label>
+          <input type="email" id="customerEmail" name="customer_email" placeholder="you@example.com"
+                 style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.95rem;">
+          <span style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; display: block;">
+            Get pre-booking confirmations and payment receipts sent to your inbox.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Pickup Time Selection -->
+    <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+        <h2 style="font-family: var(--font-heading); font-size: 1.25rem; text-transform: uppercase;">
+          2. Select Pickup Time Slot
+        </h2>
+        <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">20-min buffer required</span>
+      </div>
+
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+        Pick a 10-minute slot for freshly prepared food collection. Max 2 orders per slot:
+      </p>
+
+      <div id="slotsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; max-height: 260px; overflow-y: auto; padding: 4px;">
+        {% if available_slots %}
+          {% for slot in available_slots %}
+            <label style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 8px; border: 2px solid {% if slot.is_available %}#E7E0D6{% else %}#FFA8A8{% endif %}; border-radius: var(--radius-sm); background: {% if slot.is_available %}#FBF9F5{% else %}#FFF5F5{% endif %}; cursor: {% if slot.is_available %}pointer{% else %}not-allowed{% endif %}; opacity: {% if slot.is_available %}1{% else %}0.65{% endif %};">
+              <input type="radio" name="pickup_slot" value="{{ slot.iso }}" {% if not slot.is_available %}disabled{% endif %} style="display: none;" class="slot-radio">
+              <span style="font-weight: 800; font-size: 0.95rem; color: var(--text-main);">{{ slot.time_display }}</span>
+              <span style="font-size: 0.72rem; margin-top: 2px; font-weight: 600; color: {% if slot.is_available %}#0CA678{% else %}#E03131{% endif %};">
+                {% if slot.is_available %}
+                  Available ({{ slot.booked_count }}/2)
+                {% else %}
+                  SLOT FULL (2/2)
+                {% endif %}
+              </span>
+            </label>
+          {% endfor %}
+        {% else %}
+          <div style="grid-column: 1 / -1; padding: 16px; background: #FFF3BF; color: #8F5B00; border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600; text-align: center;">
+            No valid pickup slots remain for today within business hours (5:00 PM – 10:00 PM with 20-min preparation buffer).
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Grace Period Note -->
+      <div style="background: #FFF9DB; border-left: 4px solid #F59F00; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 0.82rem; color: #664D03; margin-top: 14px; line-height: 1.45;">
+        <strong>Pickup Reminder:</strong> Please collect your order around your selected pickup time. A 15-minute grace period is provided; after that, food freshness/hotness may not be guaranteed.
+      </div>
+    </div>
+
+    <!-- 3. Order Summary & Parcel Charges -->
+    <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm);">
+      <h2 style="font-family: var(--font-heading); font-size: 1.25rem; text-transform: uppercase; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+        3. Order Summary
+      </h2>
+
+      <div id="checkoutItemsList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
+        <!-- Populated via JS from cart -->
+      </div>
+
+      <div class="price-breakdown" id="checkoutPriceBreakdown">
+        <!-- Live subtotals -->
+      </div>
+    </div>
+
+    <!-- 4. Payment Selection -->
+    <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm);">
+      <h2 style="font-family: var(--font-heading); font-size: 1.25rem; text-transform: uppercase; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+        4. Payment Method
+      </h2>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <label style="display: flex; align-items: center; gap: 10px; padding: 12px; border: 2px solid var(--primary); border-radius: var(--radius-md); background: var(--primary-subtle); cursor: pointer;">
+          <input type="radio" name="payment_method" value="UPI" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
+          <div>
+            <span style="font-weight: 700; font-size: 0.95rem;">UPI (GPay / PhonePe / Paytm / QR)</span>
+            <span style="display: block; font-size: 0.78rem; color: var(--text-muted);">Instant zero-fee payment for roadside pickup</span>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer;">
+          <input type="radio" name="payment_method" value="NETBANKING" style="width: 18px; height: 18px; accent-color: var(--primary);">
+          <div>
+            <span style="font-weight: 700; font-size: 0.95rem;">Net Banking</span>
+            <span style="display: block; font-size: 0.78rem; color: var(--text-muted);">All major Indian banks supported</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Error Alert Box -->
+    <div id="checkoutErrorBox" style="display: none; background: #FFE3E3; border: 1px solid #FFA8A8; color: #C92A2A; padding: 12px 14px; border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600;">
+    </div>
+
+    <!-- Action Button -->
+    <button type="submit" class="hero-cta-btn" id="payNowBtn" style="width: 100%; padding: 16px; font-size: 1.2rem;">
+      PAY NOW &bull; <span id="checkoutPayBtnTotal">₹0.00</span>
+    </button>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const cart = window.SPCart.getCart();
+    const summary = window.SPCart.getSummary();
+    const emptyWarning = document.getElementById('checkoutEmptyWarning');
+    const form = document.getElementById('checkoutForm');
+    const itemsList = document.getElementById('checkoutItemsList');
+    const breakdown = document.getElementById('checkoutPriceBreakdown');
+    const payBtnTotal = document.getElementById('checkoutPayBtnTotal');
+    const payNowBtn = document.getElementById('payNowBtn');
+    const errorBox = document.getElementById('checkoutErrorBox');
+
+    if (!cart || cart.length === 0) {
+      if (emptyWarning) emptyWarning.style.display = 'block';
+      if (form) form.style.display = 'none';
+      return;
+    }
+
+    // Render items summary
+    let itemsHtml = '';
+    cart.forEach(item => {
+      const q = parseInt(item.quantity, 10) || 1;
+      const base = (parseFloat(item.price) || 0) * q;
+      let addonSum = 0;
+      let addonNames = [];
+      if (item.addons) {
+        item.addons.forEach(a => {
+          addonSum += (parseFloat(a.price) || 0) * q;
+          addonNames.push(a.name);
+        });
+      }
+      const lineTotal = base + addonSum;
+      itemsHtml += `
+        <div style="display:flex; justify-content:space-between; align-items:baseline; padding:6px 0; border-bottom:1px dashed #E7E0D6; font-size:0.92rem;">
+          <div>
+            <strong style="color:var(--text-main);">${q}x ${item.name}</strong>
+            ${addonNames.length > 0 ? `<div style="font-size:0.78rem; color:var(--text-muted); margin-left:14px;">+ ${addonNames.join(', ')}</div>` : ''}
+            ${item.isParcel ? `<div style="font-size:0.75rem; color:#E8590C; font-weight:600; margin-left:14px;">Pack as Parcel</div>` : ''}
+          </div>
+          <div style="font-weight:700;">₹${lineTotal.toFixed(2)}</div>
+        </div>
+      `;
+    });
+    itemsList.innerHTML = itemsHtml;
+
+    // Render breakdown
+    breakdown.innerHTML = `
+      <div class="price-row">
+        <span>Food Subtotal</span>
+        <span>₹${summary.itemsSubtotal.toFixed(2)}</span>
+      </div>
+      ${summary.addonsSubtotal > 0 ? `
+        <div class="price-row">
+          <span>Add-ons / Sauces Subtotal</span>
+          <span>+₹${summary.addonsSubtotal.toFixed(2)}</span>
+        </div>
+      ` : ''}
+      <div class="price-row highlight">
+        <span>Parcel Charges (${summary.totalParcelQty} items × ₹5.00)</span>
+        <span>₹${summary.parcelTotal.toFixed(2)}</span>
+      </div>
+      <div class="parcel-notice">
+        Calculated as ₹5 per quantity of takeaway items for packaging.
+      </div>
+      <div class="price-row total">
+        <span>Final Payable Amount</span>
+        <span>₹${summary.grandTotal.toFixed(2)}</span>
+      </div>
+    `;
+
+    payBtnTotal.textContent = `₹${summary.grandTotal.toFixed(2)}`;
+
+    // Slot selection highlighting
+    const slotLabels = document.querySelectorAll('#slotsGrid label');
+    const slotRadios = document.querySelectorAll('.slot-radio');
+
+    slotRadios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        slotLabels.forEach(lbl => {
+          const r = lbl.querySelector('.slot-radio');
+          if (r && r.checked) {
+            lbl.style.borderColor = '#E8590C';
+            lbl.style.background = '#FFF4E6';
+          } else if (r && !r.disabled) {
+            lbl.style.borderColor = '#E7E0D6';
+            lbl.style.background = '#FBF9F5';
+          }
+        });
+      });
+    });
+
+    // Handle checkout submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.style.display = 'none';
+
+      const selectedSlot = document.querySelector('input[name="pickup_slot"]:checked');
+      if (!selectedSlot) {
+        errorBox.textContent = "Please select an available pickup time slot.";
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      const name = document.getElementById('customerName').value.trim();
+      const mobile = document.getElementById('customerMobile').value.trim();
+      const email = document.getElementById('customerEmail') ? document.getElementById('customerEmail').value.trim() : '';
+      const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+
+      payNowBtn.disabled = true;
+      payNowBtn.textContent = "Processing Order...";
+
+      try {
+        const response = await fetch('/api/orders/create/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+          },
+          body: JSON.stringify({
+            customer_name: name,
+            customer_mobile: mobile,
+            customer_email: email,
+            pickup_slot: selectedSlot.value,
+            cart_items: cart,
+            payment_method: paymentMethod
+          })
+        });
+
+        const resData = await response.json();
+        if (resData.success) {
+          // Clear cart now that pending order is recorded
+          window.SPCart.clearCart();
+          window.location.href = resData.redirect_url;
+        } else {
+          errorBox.textContent = resData.error || "Failed to proceed to payment.";
+          errorBox.style.display = 'block';
+          payNowBtn.disabled = false;
+          payNowBtn.innerHTML = `PAY NOW &bull; <span>₹${summary.grandTotal.toFixed(2)}</span>`;
+        }
+      } catch (err) {
+        errorBox.textContent = "Network error. Please check connection and try again.";
+        errorBox.style.display = 'block';
+        payNowBtn.disabled = false;
+        payNowBtn.innerHTML = `PAY NOW &bull; <span>₹${summary.grandTotal.toFixed(2)}</span>`;
+      }
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Refund Policy | {{ business_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 40px 16px; max-width: 760px;">
+  <h1 style="font-family: var(--font-heading); font-size: 2rem; margin-bottom: 16px;">REFUND POLICY</h1>
+  <p style="color: var(--text-muted); margin-bottom: 24px;">Stuff &amp; Puff | Chengalpattu (Near GH Bus Stop, Chengalpattu)</p>
+
+  <div style="background:#FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 24px; line-height: 1.7;">
+    <h3 style="margin-bottom: 8px;">1. Shop Closure or Unfulfilled Orders</h3>
+    <p style="margin-bottom: 16px;">In the rare event that the shop unexpectedly needs to close due to severe weather, technical reasons, or stock exhaustion after payment has been verified, <strong>a 100% full refund will be automatically initiated</strong> to your original payment method, and an email notification will be sent.</p>
+
+    <h3 style="margin-bottom: 8px;">2. Payment Gateway Reconciliation</h3>
+    <p style="margin-bottom: 16px;">If money was deducted from your bank/UPI account but your order was not confirmed due to a network interruption or full slot capacity, the payment gateway will automatically reconcile and refund the amount within standard banking timelines (normally 2-5 business days).</p>
+
+    <h3 style="margin-bottom: 8px;">3. Customer No-Show</h3>
+    <p>Because all food items are prepared fresh to order specifically for your booked time slot, orders cannot be cancelled or refunded after preparation has commenced if you fail to arrive within the grace period.</p>
+  </div>
+</div>
+{% endblock %}
