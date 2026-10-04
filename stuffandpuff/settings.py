@@ -6,8 +6,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-stuff-and-puff-chengalpattu-secret-key-2026')
 DEBUG = config('DEBUG', default=True, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://127.0.0.1,http://localhost', cast=Csv())
+def _parse_csv_list(value, default=''):
+    val = value if value is not None else default
+    val = str(val).strip().strip('"\'')
+    return [item.strip().strip('"\'') for item in val.split(',') if item.strip().strip('"\'')]
+
+raw_allowed_hosts = config('ALLOWED_HOSTS', default='127.0.0.1,localhost,.vercel.app')
+ALLOWED_HOSTS = _parse_csv_list(raw_allowed_hosts, default='127.0.0.1,localhost,.vercel.app')
+if '.vercel.app' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('.vercel.app')
+
+raw_csrf_origins = config('CSRF_TRUSTED_ORIGINS', default='http://127.0.0.1,http://localhost,https://*.vercel.app')
+CSRF_TRUSTED_ORIGINS = _parse_csv_list(raw_csrf_origins, default='http://127.0.0.1,http://localhost,https://*.vercel.app')
+if 'https://*.vercel.app' not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append('https://*.vercel.app')
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
