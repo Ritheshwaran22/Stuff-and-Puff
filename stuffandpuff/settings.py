@@ -122,6 +122,9 @@ BUSINESS_TAGLINE = "MOMOS. WAFFLES. BUNS."
 BUSINESS_LOCATION = "Near GH Bus Stop, Chengalpattu"
 BUSINESS_LOCATION_DETAILS = "Right side near GH Bus Stop, Chengalpattu"
 BUSINESS_CONTACT = "+91 83101 04426"
+SHOP_LATITUDE = "12.679571"
+SHOP_LONGITUDE = "79.9808547"
+GOOGLE_MAPS_DIRECTIONS_URL = f"https://www.google.com/maps/dir/?api=1&destination={SHOP_LATITUDE},{SHOP_LONGITUDE}"
 
 # Payment Gateway Configuration (Cashfree)
 # Provider can be 'CASHFREE' (real Cashfree API) or 'SANDBOX' (instant local simulation)
