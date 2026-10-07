@@ -287,7 +287,8 @@
     // Open Customize Modal
     document.querySelectorAll('.js-customize-item').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const itemId = btn.dataset.itemId;
+        const rawItemId = btn.dataset.itemId;
+        const itemId = parseInt(rawItemId, 10) || rawItemId;
         const name = btn.dataset.name;
         const price = parseFloat(btn.dataset.price);
         const category = btn.dataset.category;
@@ -301,7 +302,7 @@
         document.getElementById('customModalItemPrice').textContent = `Base Price: ₹${price.toFixed(2)}`;
 
         const addonsList = document.getElementById('customAddonsList');
-        const availableAddons = ITEM_ADDONS_MAP[itemId] || [];
+        const availableAddons = ITEM_ADDONS_MAP[rawItemId] || ITEM_ADDONS_MAP[itemId] || [];
 
         if (category === 'momos') {
           document.getElementById('addonsHeading').textContent = "Select Pan Fry Sauces / Preps (₹50 each)";
@@ -342,7 +343,8 @@
     // Quick Add for items without addons
     document.querySelectorAll('.js-quick-add-item').forEach(btn => {
       btn.addEventListener('click', () => {
-        const itemId = btn.dataset.itemId;
+        const rawItemId = btn.dataset.itemId;
+        const itemId = parseInt(rawItemId, 10) || rawItemId;
         const name = btn.dataset.name;
         const price = parseFloat(btn.dataset.price);
 
@@ -380,8 +382,9 @@
 
       const selectedAddons = [];
       document.querySelectorAll('.modal-addon-cb:checked').forEach(cb => {
+        const rawAId = cb.dataset.id;
         selectedAddons.push({
-          id: cb.dataset.id,
+          id: parseInt(rawAId, 10) || rawAId,
           name: cb.dataset.name,
           price: parseFloat(cb.dataset.price)
         });

@@ -158,8 +158,8 @@
 {% block extra_js %}
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const cart = window.SPCart.getCart();
-    const summary = window.SPCart.getSummary();
+    let cart = window.SPCart.getCart();
+    let summary = window.SPCart.getSummary();
     const emptyWarning = document.getElementById('checkoutEmptyWarning');
     const form = document.getElementById('checkoutForm');
     const itemsList = document.getElementById('checkoutItemsList');
@@ -168,65 +168,75 @@
     const payNowBtn = document.getElementById('payNowBtn');
     const errorBox = document.getElementById('checkoutErrorBox');
 
-    if (!cart || cart.length === 0) {
-      if (emptyWarning) emptyWarning.style.display = 'block';
-      if (form) form.style.display = 'none';
-      return;
-    }
+    function renderCheckoutSummary() {
+      cart = window.SPCart.getCart();
+      summary = window.SPCart.getSummary();
 
-    // Render items summary
-    let itemsHtml = '';
-    cart.forEach(item => {
-      const q = parseInt(item.quantity, 10) || 1;
-      const base = (parseFloat(item.price) || 0) * q;
-      let addonSum = 0;
-      let addonNames = [];
-      if (item.addons) {
-        item.addons.forEach(a => {
-          addonSum += (parseFloat(a.price) || 0) * q;
-          addonNames.push(a.name);
-        });
+      if (!cart || cart.length === 0) {
+        if (emptyWarning) emptyWarning.style.display = 'block';
+        if (form) form.style.display = 'none';
+        return false;
       }
-      const lineTotal = base + addonSum;
-      itemsHtml += `
-        <div style="display:flex; justify-content:space-between; align-items:baseline; padding:6px 0; border-bottom:1px dashed #E7E0D6; font-size:0.92rem;">
-          <div>
-            <strong style="color:var(--text-main);">${q}x ${item.name}</strong>
-            ${addonNames.length > 0 ? `<div style="font-size:0.78rem; color:var(--text-muted); margin-left:14px;">+ ${addonNames.join(', ')}</div>` : ''}
-            ${item.isParcel ? `<div style="font-size:0.75rem; color:#E8590C; font-weight:600; margin-left:14px;">Pack as Parcel</div>` : ''}
+
+      // Render items summary
+      let itemsHtml = '';
+      cart.forEach(item => {
+        const q = parseInt(item.quantity, 10) || 1;
+        const base = (parseFloat(item.price) || 0) * q;
+        let addonSum = 0;
+        let addonNames = [];
+        if (item.addons) {
+          item.addons.forEach(a => {
+            addonSum += (parseFloat(a.price) || 0) * q;
+            addonNames.push(a.name);
+          });
+        }
+        const lineTotal = base + addonSum;
+        itemsHtml += `
+          <div style="display:flex; justify-content:space-between; align-items:baseline; padding:6px 0; border-bottom:1px dashed #E7E0D6; font-size:0.92rem;">
+            <div>
+              <strong style="color:var(--text-main);">${q}x ${item.name}</strong>
+              ${addonNames.length > 0 ? `<div style="font-size:0.78rem; color:var(--text-muted); margin-left:14px;">+ ${addonNames.join(', ')}</div>` : ''}
+              ${item.isParcel ? `<div style="font-size:0.75rem; color:#E8590C; font-weight:600; margin-left:14px;">Pack as Parcel</div>` : ''}
+            </div>
+            <div style="font-weight:700;">₹${lineTotal.toFixed(2)}</div>
           </div>
-          <div style="font-weight:700;">₹${lineTotal.toFixed(2)}</div>
+        `;
+      });
+      itemsList.innerHTML = itemsHtml;
+
+      // Render breakdown
+      breakdown.innerHTML = `
+        <div class="price-row">
+          <span>Food Subtotal</span>
+          <span>₹${summary.itemsSubtotal.toFixed(2)}</span>
+        </div>
+        ${summary.addonsSubtotal > 0 ? `
+          <div class="price-row">
+            <span>Add-ons / Sauces Subtotal</span>
+            <span>+₹${summary.addonsSubtotal.toFixed(2)}</span>
+          </div>
+        ` : ''}
+        <div class="price-row highlight">
+          <span>Parcel Charges (${summary.totalParcelQty} items × ₹5.00)</span>
+          <span>₹${summary.parcelTotal.toFixed(2)}</span>
+        </div>
+        <div class="parcel-notice">
+          Calculated as ₹5 per quantity of takeaway items for packaging.
+        </div>
+        <div class="price-row total">
+          <span>Final Payable Amount</span>
+          <span>₹${summary.grandTotal.toFixed(2)}</span>
         </div>
       `;
-    });
-    itemsList.innerHTML = itemsHtml;
 
-    // Render breakdown
-    breakdown.innerHTML = `
-      <div class="price-row">
-        <span>Food Subtotal</span>
-        <span>₹${summary.itemsSubtotal.toFixed(2)}</span>
-      </div>
-      ${summary.addonsSubtotal > 0 ? `
-        <div class="price-row">
-          <span>Add-ons / Sauces Subtotal</span>
-          <span>+₹${summary.addonsSubtotal.toFixed(2)}</span>
-        </div>
-      ` : ''}
-      <div class="price-row highlight">
-        <span>Parcel Charges (${summary.totalParcelQty} items × ₹5.00)</span>
-        <span>₹${summary.parcelTotal.toFixed(2)}</span>
-      </div>
-      <div class="parcel-notice">
-        Calculated as ₹5 per quantity of takeaway items for packaging.
-      </div>
-      <div class="price-row total">
-        <span>Final Payable Amount</span>
-        <span>₹${summary.grandTotal.toFixed(2)}</span>
-      </div>
-    `;
+      payBtnTotal.textContent = `₹${summary.grandTotal.toFixed(2)}`;
+      return true;
+    }
 
-    payBtnTotal.textContent = `₹${summary.grandTotal.toFixed(2)}`;
+    if (!renderCheckoutSummary()) {
+      return;
+    }
 
     // Slot selection highlighting
     const slotLabels = document.querySelectorAll('#slotsGrid label');
@@ -290,6 +300,16 @@
           window.SPCart.clearCart();
           window.location.href = resData.redirect_url;
         } else {
+          if (resData.invalid_item_id !== undefined && resData.invalid_item_id !== null) {
+            window.SPCart.removeItemById(resData.invalid_item_id);
+            const hasItemsLeft = renderCheckoutSummary();
+            if (!hasItemsLeft && emptyWarning) {
+              const warningP = emptyWarning.querySelector('p');
+              if (warningP && resData.error) {
+                warningP.textContent = resData.error;
+              }
+            }
+          }
           errorBox.textContent = resData.error || "Failed to proceed to payment.";
           errorBox.style.display = 'block';
           payNowBtn.disabled = false;

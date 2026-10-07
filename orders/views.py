@@ -11,7 +11,7 @@ from django.utils.dateparse import parse_datetime
 from shop.models import ShopSettings
 from orders.models import Order
 from orders.services.slot_service import get_available_pickup_slots
-from payments.services.payment_service import PaymentService
+from payments.services.payment_service import PaymentService, InvalidCartItemError
 
 def checkout_view(request):
     shop_settings = ShopSettings.get_settings()
@@ -99,6 +99,12 @@ def api_create_order(request):
             'gateway_order_id': payment.gateway_order_id,
             'redirect_url': f"/orders/pay/{order.id}/"
         })
+    except InvalidCartItemError as inv_err:
+        return JsonResponse({
+            'success': False,
+            'error': str(inv_err),
+            'invalid_item_id': inv_err.item_id
+        }, status=400)
     except ValueError as val_err:
         return JsonResponse({'success': False, 'error': str(val_err)}, status=400)
     except Exception as ex:

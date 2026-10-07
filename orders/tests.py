@@ -7,7 +7,7 @@ from menu.models import Category, MenuItem, AddOn
 from orders.models import Customer, Order, OrderItem
 from payments.models import Payment
 from orders.services.slot_service import get_available_pickup_slots, validate_and_lock_slot_capacity
-from payments.services.payment_service import PaymentService, generate_order_identifiers
+from payments.services.payment_service import PaymentService, generate_order_identifiers, InvalidCartItemError
 
 @override_settings(CASHFREE_CLIENT_ID='', CASHFREE_CLIENT_SECRET='')
 class StuffAndPuffBusinessLogicTests(TestCase):
@@ -464,4 +464,118 @@ class StuffAndPuffBusinessLogicTests(TestCase):
         session.save()
         resp_creator = client_creator.get(f"/orders/pay/{order.id}/")
         self.assertEqual(resp_creator.status_code, 200)
+
+    # 17. REGRESSION TESTS: STRING IDS & STALE ITEM IDS
+    def test_chicken_momos_checkout_with_string_item_and_addon_ids(self):
+        """
+        Frontend sends IDs as strings (e.g. '4' and '1').
+        Ensure PaymentService finds the MenuItem and AddOn and calculates accurate prices.
+        """
+        cart = [{
+            'id': str(self.chicken_momos.id),
+            'name': self.chicken_momos.name,
+            'price': float(self.chicken_momos.price),
+            'quantity': 1,
+            'isParcel': False,
+            'addons': [{
+                'id': str(self.dragon_sauce.id),
+                'name': self.dragon_sauce.name,
+                'price': float(self.dragon_sauce.price)
+            }]
+        }]
+        order, payment = PaymentService.create_pending_order(
+            "Test Customer", "9876543210", self.today_slot, cart
+        )
+        self.assertEqual(order.payment_status, 'PENDING')
+        # Chicken Momos (100) + Dragon Blaze (50) = 150
+        self.assertEqual(order.total_amount, Decimal('150.00'))
+        self.assertEqual(order.items.count(), 1)
+        line = order.items.first()
+        self.assertEqual(line.menu_item, self.chicken_momos)
+        self.assertEqual(line.unit_price_snapshot, Decimal('100.00'))
+        self.assertEqual(line.addons.count(), 1)
+        self.assertEqual(line.addons.first().addon, self.dragon_sauce)
+        self.assertEqual(line.addons.first().price_snapshot, Decimal('50.00'))
+
+    def test_chicken_momos_with_each_of_five_sauces(self):
+        """
+        Verify Chicken Momos works seamlessly with all five signature sauces:
+        - Dragon Blaze (+₹50)
+        - Fiery Fusion (+₹50)
+        - Cheese Volcano (+₹50)
+        - Honey Garlic Cheese Blast (+₹50)
+        - Garlic Cheese Blast (+₹50)
+        """
+        sauce_names = [
+            'Dragon Blaze',
+            'Fiery Fusion',
+            'Cheese Volcano',
+            'Honey Garlic Cheese Blast',
+            'Garlic Cheese Blast'
+        ]
+        for name in sauce_names:
+            sauce, _ = AddOn.objects.get_or_create(
+                name=name,
+                defaults={'price': Decimal('50.00'), 'category_type': 'SAUCE', 'is_available': True}
+            )
+            sauce.applicable_items.add(self.chicken_momos)
+
+            cart = [{
+                'id': str(self.chicken_momos.id),
+                'name': self.chicken_momos.name,
+                'price': 100.0,
+                'quantity': 1,
+                'isParcel': False,
+                'addons': [{'id': str(sauce.id), 'name': sauce.name, 'price': 50.0}]
+            }]
+
+            order, _ = PaymentService.create_pending_order(
+                "Momo Lover", "9876543210", self.today_slot, cart
+            )
+            self.assertEqual(order.total_amount, Decimal('150.00'))
+            self.assertEqual(order.items.first().addons.first().addon.name, name)
+
+    def test_stale_or_nonexistent_menu_item_id_handling(self):
+        """
+        When cart contains an old/stale menu item ID (e.g. ID 99999) that does not exist in the DB,
+        PaymentService raises InvalidCartItemError and the API returns invalid_item_id so frontend
+        can remove it gracefully instead of crashing with a raw error.
+        """
+        cart = [{
+            'id': 99999,
+            'name': 'Old Momos',
+            'price': 100.0,
+            'quantity': 1,
+            'isParcel': False,
+            'addons': []
+        }]
+
+        with self.assertRaises(InvalidCartItemError) as ctx:
+            PaymentService.create_pending_order("User", "9876543210", self.today_slot, cart)
+
+        self.assertEqual(ctx.exception.item_id, 99999)
+        self.assertIn("no longer available", str(ctx.exception))
+
+        # Test API view response
+        from django.test import Client
+        import json
+        client = Client()
+        slot_iso = self.today_slot.isoformat()
+        response = client.post(
+            '/api/orders/create/',
+            data=json.dumps({
+                'customer_name': 'Test Customer',
+                'customer_mobile': '9876543210',
+                'pickup_slot': slot_iso,
+                'cart_items': cart,
+                'payment_method': 'UPI'
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertFalse(data['success'])
+        self.assertEqual(data['invalid_item_id'], 99999)
+        self.assertIn("no longer available", data['error'])
+
 

@@ -32,6 +32,14 @@ def generate_order_identifiers():
         next_seq += 1
 
 
+class InvalidCartItemError(ValueError):
+    """Raised when an item in the cart is no longer present or valid in the database."""
+    def __init__(self, message, item_id=None, item_name=None):
+        super().__init__(message)
+        self.item_id = item_id
+        self.item_name = item_name
+
+
 class PaymentService:
     @classmethod
     def create_pending_order(cls, customer_name, customer_mobile, pickup_slot_dt, cart_items, payment_method='UPI', request=None, customer_email=None):
@@ -88,17 +96,35 @@ class PaymentService:
         validated_order_lines = []
 
         # Batch fetch all menu items and add-ons in advance to eliminate round-trip DB latency
-        all_item_ids = [line.get('id') for line in cart_items if line.get('id') is not None]
-        all_addon_ids = [
-            a.get('id') for line in cart_items
-            for a in line.get('addons', []) if a.get('id') is not None
-        ]
+        all_item_ids = []
+        for line in cart_items:
+            raw_id = line.get('id')
+            if raw_id is not None:
+                try:
+                    all_item_ids.append(int(raw_id))
+                except (ValueError, TypeError):
+                    pass
 
-        items_by_id = {item.id: item for item in MenuItem.objects.filter(id__in=all_item_ids)}
-        addons_by_id = {
-            addon.id: addon
-            for addon in AddOn.objects.filter(id__in=all_addon_ids).prefetch_related('applicable_items')
-        }
+        all_addon_ids = []
+        for line in cart_items:
+            for a in line.get('addons', []):
+                raw_aid = a.get('id')
+                if raw_aid is not None:
+                    try:
+                        all_addon_ids.append(int(raw_aid))
+                    except (ValueError, TypeError):
+                        pass
+
+        # Populate maps supporting both int and str keys so frontend JSON IDs match seamlessly
+        items_by_id = {}
+        for item in MenuItem.objects.filter(id__in=all_item_ids):
+            items_by_id[item.id] = item
+            items_by_id[str(item.id)] = item
+
+        addons_by_id = {}
+        for addon in AddOn.objects.filter(id__in=all_addon_ids).prefetch_related('applicable_items'):
+            addons_by_id[addon.id] = addon
+            addons_by_id[str(addon.id)] = addon
 
         for line in cart_items:
             item_id = line.get('id')
@@ -117,10 +143,19 @@ class PaymentService:
 
             db_item = items_by_id.get(item_id)
             if not db_item:
-                raise ValueError(f"Menu item with ID {item_id} does not exist.")
+                item_name = line.get('name') or (f"Item #{item_id}" if item_id is not None else "Selected item")
+                raise InvalidCartItemError(
+                    f"'{item_name}' is no longer available on our menu and has been removed from your cart. Please select items from our current menu.",
+                    item_id=item_id,
+                    item_name=item_name
+                )
 
             if not db_item.is_available:
-                raise ValueError(f"'{db_item.name}' is currently SOLD OUT. Please update your cart.")
+                raise InvalidCartItemError(
+                    f"'{db_item.name}' is currently SOLD OUT and has been removed from your cart. Please update your cart.",
+                    item_id=item_id,
+                    item_name=db_item.name
+                )
 
             line_item_total = db_item.price * qty
             items_subtotal += line_item_total

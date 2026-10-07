@@ -11,7 +11,31 @@
   let cart = [];
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) cart = JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        cart = parsed.map(item => {
+          if (!item) return null;
+          const numId = parseInt(item.id, 10);
+          const normalizedItem = {
+            ...item,
+            id: isNaN(numId) ? item.id : numId,
+            quantity: parseInt(item.quantity, 10) || 1,
+            addons: Array.isArray(item.addons) ? item.addons.map(a => {
+              const aId = parseInt(a.id, 10);
+              return {
+                ...a,
+                id: isNaN(aId) ? a.id : aId
+              };
+            }) : []
+          };
+          const addonIds = (normalizedItem.addons || []).map(a => a.id).sort().join('_');
+          const parcelKey = normalizedItem.isParcel ? 'parcel' : 'dine';
+          normalizedItem.lineKey = `${normalizedItem.id}_${addonIds}_${parcelKey}`;
+          return normalizedItem;
+        }).filter(Boolean);
+      }
+    }
   } catch (e) {
     cart = [];
   }
@@ -23,6 +47,13 @@
       console.error("Failed to save cart to localStorage", e);
     }
     updateCartUI();
+  }
+
+  function removeItemById(itemId) {
+    if (itemId === null || itemId === undefined) return;
+    const idStr = String(itemId);
+    cart = cart.filter(item => String(item.id) !== idStr);
+    saveCart();
   }
 
   function getCartSummary() {
@@ -189,10 +220,19 @@
 
   // Add Item to Cart
   function addToCart(item) {
+    const numId = parseInt(item.id, 10);
+    const normId = isNaN(numId) ? item.id : numId;
+    const normAddons = (item.addons || []).map(a => {
+      const aId = parseInt(a.id, 10);
+      return {
+        ...a,
+        id: isNaN(aId) ? a.id : aId
+      };
+    });
     // Generate a unique line key based on itemId, selected addons, and parcel state
-    const addonIds = (item.addons || []).map(a => a.id).sort().join('_');
+    const addonIds = normAddons.map(a => a.id).sort().join('_');
     const parcelKey = item.isParcel ? 'parcel' : 'dine';
-    const lineKey = `${item.id}_${addonIds}_${parcelKey}`;
+    const lineKey = `${normId}_${addonIds}_${parcelKey}`;
 
     const existing = cart.find(entry => entry.lineKey === lineKey);
     if (existing) {
@@ -200,6 +240,8 @@
     } else {
       cart.push({
         ...item,
+        id: normId,
+        addons: normAddons,
         lineKey,
         quantity: parseInt(item.quantity, 10) || 1
       });
@@ -214,6 +256,9 @@
     clearCart: () => {
       cart = [];
       saveCart();
+    },
+    removeItemById: (itemId) => {
+      removeItemById(itemId);
     },
     addItem: (item) => {
       addToCart(item);
