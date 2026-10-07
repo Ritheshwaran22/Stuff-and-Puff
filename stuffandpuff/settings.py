@@ -133,6 +133,7 @@ CASHFREE_CLIENT_ID = config('CASHFREE_CLIENT_ID', default='')
 CASHFREE_CLIENT_SECRET = config('CASHFREE_CLIENT_SECRET', default='')
 CASHFREE_ENVIRONMENT = config('CASHFREE_ENVIRONMENT', default='SANDBOX') # 'SANDBOX' or 'PRODUCTION'
 CASHFREE_API_VERSION = config('CASHFREE_API_VERSION', default='2023-08-01')
+CASHFREE_NOTIFY_URL = config('CASHFREE_NOTIFY_URL', default='https://stuff-and-puff.vercel.app/payments/cashfree/webhook/')
 
 
 # Brevo Email Configuration

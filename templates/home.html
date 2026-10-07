@@ -105,7 +105,7 @@
   <nav class="category-nav" aria-label="Menu categories">
     {% for category in categories %}
       <a href="#cat-{{ category.slug }}" class="category-tab {% if forloop.first %}active{% endif %}">
-        {{ category.name }} ({{ category.items.count }})
+        {{ category.name }} ({{ category.items.all|length }})
       </a>
     {% endfor %}
   </nav>
@@ -117,7 +117,7 @@
     <div class="category-block" id="cat-{{ category.slug }}">
       <div class="category-title">
         <span>{{ category.name }}</span>
-        <span class="category-count">{{ category.items.count }} items</span>
+        <span class="category-count">{{ category.items.all|length }} items</span>
       </div>
 
       <div class="menu-grid">
@@ -148,7 +148,7 @@
 
             <div class="card-actions">
               {% if item.is_available and is_shop_open and is_online_orders_enabled %}
-                {% if item.applicable_addons.count > 0 %}
+                {% if item.applicable_addons.all %}
                   <button type="button" class="btn-add js-customize-item"
                           data-item-id="{{ item.id }}"
                           data-name="{{ item.name }}"

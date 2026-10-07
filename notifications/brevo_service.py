@@ -119,7 +119,7 @@ def send_transactional_email(
             text_content=text_content
         )
 
-        response = api_instance.send_transac_email(send_smtp_email)
+        response = api_instance.send_transac_email(send_smtp_email, _request_timeout=10)
         message_id = getattr(response, 'message_id', str(response)) or 'accepted'
 
         logger.info("Brevo transactional email sent successfully to %s (message_id: %s)", to_email, message_id)

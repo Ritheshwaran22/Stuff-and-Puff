@@ -160,6 +160,7 @@ class CashfreePaymentIntegrationTests(TestCase):
         called_payload = mock_post.call_args[1]['json']
         self.assertIn('order_meta', called_payload)
         self.assertEqual(called_payload['order_meta']['payment_methods'], 'upi,nb')
+        self.assertEqual(called_payload['order_meta']['notify_url'], 'https://stuff-and-puff.vercel.app/payments/cashfree/webhook/')
 
     # 4b. FAILED CASHFREE ORDER PREVENTS PAYMENT AND ORDER RECORD CREATION
     @override_settings(
@@ -531,3 +532,165 @@ class CashfreePaymentIntegrationTests(TestCase):
         ok2, res2 = PaymentService.verify_and_confirm_payment(order.id, gateway_payment_id='cf_idem_1')
         self.assertTrue(ok2)
         self.assertEqual(res2.payment_status, 'PAID')
+
+    # 16. WEBHOOK ROUTE AND SIGNATURE VERIFICATION
+    @override_settings(
+        CASHFREE_CLIENT_ID='TEST_CLIENT_123',
+        CASHFREE_CLIENT_SECRET='TEST_SECRET_456',
+        CASHFREE_ENVIRONMENT='SANDBOX'
+    )
+    def test_cashfree_webhook_valid_signature_confirms_payment(self):
+        """Cashfree webhook verifies HMAC signature and confirms order."""
+        import base64
+        import hmac
+        import hashlib
+        import json
+
+        cart = [{'id': self.waffle.id, 'quantity': 1, 'isParcel': False, 'addons': []}]
+        order, payment = PaymentService.create_pending_order("Webhook User", "9876543210", self.pickup_slot, cart)
+
+        payload_dict = {
+            "type": "PAYMENT_SUCCESS_WEBHOOK",
+            "data": {
+                "order": {"order_id": payment.gateway_order_id},
+                "payment": {"cf_payment_id": "cf_webhook_pay_1"}
+            }
+        }
+        raw_body = json.dumps(payload_dict)
+        timestamp = "1720000000"
+
+        # Generate valid HMAC signature
+        secret = 'TEST_SECRET_456'
+        signature_data = f"{timestamp}{raw_body}"
+        valid_signature = base64.b64encode(
+            hmac.new(secret.encode('utf-8'), signature_data.encode('utf-8'), hashlib.sha256).digest()
+        ).decode('utf-8')
+
+        with patch('payments.services.cashfree_service.CashfreeService.get_order_status') as mock_status:
+            mock_status.return_value = {
+                'success': True,
+                'order_id': payment.gateway_order_id,
+                'order_status': 'PAID',
+                'order_amount': Decimal('50.00'),
+                'order_currency': 'INR'
+            }
+            response = self.client.post(
+                '/payments/cashfree/webhook/',
+                data=raw_body,
+                content_type='application/json',
+                HTTP_X_WEBHOOK_SIGNATURE=valid_signature,
+                HTTP_X_WEBHOOK_TIMESTAMP=timestamp
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'status': 'ok'})
+
+        payment.refresh_from_db()
+        order.refresh_from_db()
+        self.assertEqual(payment.status, 'SUCCESS')
+        self.assertEqual(order.payment_status, 'PAID')
+
+    @override_settings(
+        CASHFREE_CLIENT_ID='TEST_CLIENT_123',
+        CASHFREE_CLIENT_SECRET='TEST_SECRET_456',
+        CASHFREE_ENVIRONMENT='SANDBOX'
+    )
+    def test_cashfree_webhook_invalid_signature_rejected(self):
+        """Cashfree webhook rejects unauthorized payloads with invalid signature."""
+        response = self.client.post(
+            '/payments/cashfree/webhook/',
+            data='{"type": "PAYMENT_SUCCESS_WEBHOOK"}',
+            content_type='application/json',
+            HTTP_X_WEBHOOK_SIGNATURE='invalid_tampered_signature',
+            HTTP_X_WEBHOOK_TIMESTAMP='1720000000'
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Invalid webhook signature", response.content.decode('utf-8'))
+
+    @patch('notifications.brevo_service.BrevoService.send_email')
+    @patch('payments.services.cashfree_service.requests.post')
+    def test_unpaid_order_does_not_send_email(self, mock_cf_post, mock_send_email):
+        """Unpaid order during creation and during failed verification never dispatches confirmation email."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            'cf_order_id': 'cf_ord_unpaid_1',
+            'order_id': 'cf_ord_unpaid_1',
+            'order_status': 'ACTIVE',
+            'payment_session_id': 'sess_unpaid_1'
+        }
+        mock_cf_post.return_value = mock_resp
+
+        cart = [{'id': self.momo.id, 'quantity': 1, 'isParcel': False, 'addons': []}]
+        order, payment = PaymentService.create_pending_order(
+            "Unpaid User", "9876543210", self.pickup_slot, cart, customer_email="unpaid@example.com"
+        )
+
+        # 1. During order creation: NO email dispatched
+        mock_send_email.assert_not_called()
+        self.assertEqual(order.payment_status, 'PENDING')
+        self.assertFalse(order.payment_email_sent)
+
+        # 2. If Cashfree reports payment still ACTIVE (abandoned/not completed)
+        with patch('payments.services.cashfree_service.CashfreeService.get_order_status') as mock_status:
+            mock_status.return_value = {
+                'success': True,
+                'order_id': payment.gateway_order_id,
+                'order_status': 'ACTIVE',
+                'order_amount': Decimal('70.00'),
+                'order_currency': 'INR'
+            }
+            success, result = PaymentService.verify_and_confirm_payment(order.id)
+            self.assertFalse(success)
+            self.assertIn("Payment is not confirmed", result)
+            order.refresh_from_db()
+            self.assertEqual(order.payment_status, 'PENDING')
+            self.assertFalse(order.payment_email_sent)
+            mock_send_email.assert_not_called()
+
+    @patch('notifications.brevo_service.BrevoService.send_email')
+    @patch('payments.services.cashfree_service.CashfreeService.get_order_status')
+    def test_verified_paid_order_sends_email_exactly_once_and_handles_duplicates(self, mock_cf_status, mock_send_email):
+        """Verified PAID order dispatches confirmation email exactly once, even with duplicate webhooks."""
+        mock_send_email.return_value = {'success': True, 'message_id': 'brevo-msg-paid-1'}
+        mock_cf_status.return_value = {
+            'success': True,
+            'order_id': 'cf_ord_paid_test',
+            'order_status': 'PAID',
+            'order_amount': Decimal('70.00'),
+            'order_currency': 'INR'
+        }
+
+        cart = [{'id': self.momo.id, 'quantity': 1, 'isParcel': False, 'addons': []}]
+        with patch('payments.services.cashfree_service.requests.post') as mock_cf_post:
+            mock_cf_post.return_value = MagicMock(
+                status_code=200,
+                json=lambda: {
+                    'cf_order_id': 'cf_ord_paid_test',
+                    'order_id': 'cf_ord_paid_test',
+                    'order_status': 'ACTIVE',
+                    'payment_session_id': 'sess_paid_test'
+                }
+            )
+            order, payment = PaymentService.create_pending_order(
+                "Paid User", "9876543210", self.pickup_slot, cart, customer_email="paid@example.com"
+            )
+
+        # No email on creation
+        mock_send_email.assert_not_called()
+
+        # First verification succeeds -> triggers email
+        success, confirmed_order = PaymentService.verify_and_confirm_payment(
+            order.id, gateway_order_id='cf_ord_paid_test'
+        )
+        self.assertTrue(success)
+        self.assertEqual(confirmed_order.payment_status, 'PAID')
+        self.assertEqual(mock_send_email.call_count, 1)
+
+        # Duplicate verification (e.g. webhook after return view) -> 0 additional emails
+        success_dup, confirmed_dup = PaymentService.verify_and_confirm_payment(
+            order.id, gateway_order_id='cf_ord_paid_test'
+        )
+        self.assertTrue(success_dup)
+        self.assertEqual(mock_send_email.call_count, 1)
+

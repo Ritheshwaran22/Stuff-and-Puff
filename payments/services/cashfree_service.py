@@ -92,8 +92,13 @@ class CashfreeService:
             },
             "order_note": f"Stuff & Puff Chengalpattu Order #{order.order_number}",
         }
-        if notify_url:
-            payload["order_meta"]["notify_url"] = notify_url
+        effective_notify_url = notify_url or getattr(
+            settings,
+            'CASHFREE_NOTIFY_URL',
+            'https://stuff-and-puff.vercel.app/payments/cashfree/webhook/'
+        )
+        if effective_notify_url:
+            payload["order_meta"]["notify_url"] = effective_notify_url
 
         try:
             resp = requests.post(url, json=payload, headers=cls.get_headers(), timeout=10)

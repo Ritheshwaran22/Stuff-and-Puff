@@ -15,6 +15,7 @@ class StuffAndPuffBusinessLogicTests(TestCase):
         # 1. Setup Shop Settings
         self.settings = ShopSettings.get_settings()
         self.settings.shop_open = True
+        self.settings.online_orders_enabled = True
         now = timezone.localtime(timezone.now())
         opening_dt = now - datetime.timedelta(hours=2)
         closing_dt = now + datetime.timedelta(hours=4)

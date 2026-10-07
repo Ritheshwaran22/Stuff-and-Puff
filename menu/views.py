@@ -3,21 +3,20 @@ from django.db.models import Prefetch
 from .models import Category, MenuItem, AddOn
 
 def home_view(request):
-    # Fetch active categories with their menu items ordered by display_order
-    categories = Category.objects.filter(is_active=True).prefetch_related(
-        Prefetch(
-            'items',
-            queryset=MenuItem.objects.all().order_by('display_order', 'name')
-        )
-    ).order_by('display_order', 'name')
-
-    # All items with active applicable add-ons for the client customization modal
-    all_items_with_addons = MenuItem.objects.prefetch_related(
-        Prefetch(
-            'applicable_addons',
-            queryset=AddOn.objects.filter(is_available=True)
-        )
+    # Fetch active categories with menu items and active applicable add-ons prefetched
+    active_addons = AddOn.objects.filter(is_available=True)
+    items_qs = MenuItem.objects.all().order_by('display_order', 'name').prefetch_related(
+        Prefetch('applicable_addons', queryset=active_addons)
     )
+
+    categories = list(
+        Category.objects.filter(is_active=True).prefetch_related(
+            Prefetch('items', queryset=items_qs)
+        ).order_by('display_order', 'name')
+    )
+
+    # Reuse the already prefetched items for the client customization modal (0 extra DB queries)
+    all_items_with_addons = [item for cat in categories for item in cat.items.all()]
 
     context = {
         'categories': categories,

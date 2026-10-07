@@ -23,7 +23,17 @@ class ShopSettings(models.Model):
         ordering = "ACCEPTING" if self.online_orders_enabled else "PAUSED"
         return f"Shop: {status} | Online Orders: {ordering} ({self.opening_time.strftime('%I:%M %p')} - {self.closing_time.strftime('%I:%M %p')})"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete('shop_settings_singleton')
+
     @classmethod
     def get_settings(cls):
-        obj, _ = cls.objects.get_or_create(id=1)
+        from django.core.cache import cache
+        cache_key = 'shop_settings_singleton'
+        obj = cache.get(cache_key)
+        if obj is None:
+            obj, _ = cls.objects.get_or_create(id=1)
+            cache.set(cache_key, obj, 60)
         return obj

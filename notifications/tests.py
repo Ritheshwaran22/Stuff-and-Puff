@@ -223,7 +223,8 @@ class BrevoOrderWorkflowIntegrationTests(TestCase):
 
     @patch('payments.services.cashfree_service.CashfreeService.create_order')
     @patch.object(BrevoService, 'send_email')
-    def test_1_order_created_triggers_email_with_pending_status(self, mock_email, mock_cf_create):
+    def test_1_order_created_does_not_send_email_before_payment(self, mock_email, mock_cf_create):
+        """Pre-payment order creation must NEVER send an order confirmation or pending email."""
         mock_cf_create.return_value = {
             'success': True,
             'gateway_order_id': 'cf_order_test_101',
@@ -241,12 +242,10 @@ class BrevoOrderWorkflowIntegrationTests(TestCase):
         )
 
         self.assertEqual(order.payment_status, 'PENDING')
-        mock_email.assert_called_once()
-        html_arg = mock_email.call_args[1]['html_content']
-        self.assertIn("Payment Pending", html_arg)
-        self.assertIn("Near GH Bus Stop, Chengalpattu", html_arg)
+        mock_email.assert_not_called()
         order.refresh_from_db()
-        self.assertTrue(order.created_email_sent)
+        self.assertFalse(order.payment_email_sent)
+        self.assertFalse(order.created_email_sent)
 
     @patch.object(BrevoService, 'send_email')
     def test_2_duplicate_created_email_prevented(self, mock_email):
@@ -446,14 +445,12 @@ class BrevoOrderWorkflowIntegrationTests(TestCase):
 
     @patch('payments.services.cashfree_service.CashfreeService.create_order')
     @patch.object(BrevoService, 'send_email')
-    def test_8_brevo_failure_does_not_break_order_creation(self, mock_email, mock_cf_create):
+    def test_8_order_creation_never_calls_brevo(self, mock_email, mock_cf_create):
         mock_cf_create.return_value = {
             'success': True,
             'gateway_order_id': 'cf_order_test_7006',
             'payment_session_id': 'sess_7006'
         }
-        # Brevo throws an exception during order creation
-        mock_email.side_effect = Exception("Brevo service unavailable")
 
         future_slot = timezone.now() + datetime.timedelta(minutes=40)
         order, payment = PaymentService.create_pending_order(
@@ -464,10 +461,11 @@ class BrevoOrderWorkflowIntegrationTests(TestCase):
             customer_email="grace@example.com"
         )
 
-        # Order creation must succeed despite email failure
+        # Order creation must succeed with 0 email calls
         self.assertIsNotNone(order.id)
         self.assertEqual(order.payment_status, 'PENDING')
         self.assertEqual(payment.status, 'INITIATED')
+        mock_email.assert_not_called()
 
     @patch('payments.services.cashfree_service.CashfreeService.initiate_refund')
     @patch.object(BrevoService, 'send_email')

@@ -196,8 +196,19 @@ class PaymentService:
                     "/payments/cashfree/return/?order_id={order_id}"
                 )
             else:
-                return_url = "http://127.0.0.1:8000/payments/cashfree/return/?order_id={order_id}"
-            cf_res = CashfreeService.create_order(order=order, customer=customer, return_url=return_url)
+                return_url = "https://stuff-and-puff.vercel.app/payments/cashfree/return/?order_id={order_id}"
+
+            notify_url = getattr(
+                settings,
+                'CASHFREE_NOTIFY_URL',
+                'https://stuff-and-puff.vercel.app/payments/cashfree/webhook/'
+            )
+            cf_res = CashfreeService.create_order(
+                order=order,
+                customer=customer,
+                return_url=return_url,
+                notify_url=notify_url
+            )
 
             if not cf_res.get('success') or not cf_res.get('payment_session_id'):
                 raise ValueError(
@@ -218,12 +229,6 @@ class PaymentService:
                 payment_session_id=payment_session_id,
                 status='INITIATED'
             )
-
-        # Milestone 1: Send Order Created / Pre-booking email notification safely
-        try:
-            BrevoService.send_order_created_email(order)
-        except Exception as email_err:
-            logger.warning("Order #%s pre-booking email dispatch caught safely: %s", order.order_number, email_err)
 
         return order, payment
 
@@ -313,13 +318,15 @@ class PaymentService:
             # Retrieve payment attempt reference
             if not gateway_payment_id:
                 cf_payments = CashfreeService.get_order_payments(target_order_id)
-                if cf_payments.get('success') and cf_payments.get('payments'):
-                    successful_payments = [
-                        p for p in cf_payments['payments']
-                        if p.get('payment_status') == 'SUCCESS'
-                    ]
-                    if successful_payments:
-                        gateway_payment_id = str(successful_payments[0].get('cf_payment_id', ''))
+                if cf_payments.get('success'):
+                    payments_list = cf_payments.get('payments', [])
+                    if isinstance(payments_list, list):
+                        successful_payments = [
+                            p for p in payments_list
+                            if isinstance(p, dict) and p.get('payment_status') == 'SUCCESS'
+                        ]
+                        if successful_payments:
+                            gateway_payment_id = str(successful_payments[0].get('cf_payment_id', ''))
 
             # 3. Verification Succeeded! Update state atomically
             payment.gateway_payment_id = gateway_payment_id or payment.gateway_payment_id or f"cf_pay_{uuid.uuid4().hex[:10]}"

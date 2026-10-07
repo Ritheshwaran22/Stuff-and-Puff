@@ -110,7 +110,7 @@ def pay_order_view(request, order_id):
     Payment gateway screen. Supports Cashfree checkout and sandbox simulation.
     Protected against IDOR: only the session that created the order or authorized staff can access.
     """
-    order = get_object_or_404(Order, id=order_id)
+    order = get_object_or_404(Order.objects.select_related('payment'), id=order_id)
     payment = getattr(order, 'payment', None)
 
     if order.payment_status == 'PAID':
@@ -200,7 +200,9 @@ def order_confirmation_view(request, token):
     Order Confirmed page displaying large token, pickup time, amount, and instructions.
     Strictly verifies that the current browser session is authorized to view this order.
     """
-    order = Order.objects.filter(Q(confirmation_token=token) | Q(token=token)).first()
+    order = Order.objects.filter(
+        Q(confirmation_token=token) | Q(token=token)
+    ).select_related('customer').prefetch_related('items__addons').first()
     if not order:
         raise Http404("Order not found.")
 
