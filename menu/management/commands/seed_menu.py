@@ -22,6 +22,10 @@ class Command(BaseCommand):
         settings.save()
         self.stdout.write(self.style.SUCCESS("[OK] Shop Settings initialized."))
 
+        # Deactivate any test categories/items to preserve historical order FKs while hiding from active menu
+        Category.objects.filter(slug='snacks').update(is_active=False)
+        MenuItem.objects.filter(category__slug='snacks').update(is_available=False)
+
         # 1. Categories
         self.stdout.write(self.style.NOTICE("Seeding Categories..."))
         momos_cat, _ = Category.objects.get_or_create(
@@ -64,11 +68,14 @@ class Command(BaseCommand):
 
         # 3. Pan Fry Momos / Sauces (from "Pan Fry Momos - Choose Your Sauces" on menu)
         # Listed on the menu with chilis and price Rs. 50.00 each
+        # Migrate legacy name if present
+        AddOn.objects.filter(name="Honey Fire Momos Sauce").update(name="Honey Garlic Cheese Blast Momos Sauce")
+
         sauces_data = [
             ("Dragon Blaze Momos Sauce", Decimal('50.00'), 3),
             ("Fiery Fusion Momos Sauce", Decimal('50.00'), 3),
             ("Cheese Volcano Momos Sauce", Decimal('50.00'), 3),
-            ("Honey Fire Momos Sauce", Decimal('50.00'), 2),
+            ("Honey Garlic Cheese Blast Momos Sauce", Decimal('50.00'), 2),
             ("Garlic Cheese Blast Momos Sauce", Decimal('50.00'), 3),
         ]
         created_sauces = []
@@ -153,5 +160,8 @@ class Command(BaseCommand):
             )
             created_buns.append(item)
         self.stdout.write(self.style.SUCCESS(f"[OK] {len(created_buns)} Bun items created."))
+
+        from django.core.cache import cache
+        cache.clear()
 
         self.stdout.write(self.style.SUCCESS("\n[SUCCESS] Successfully seeded Stuff & Puff Chengalpattu database from real menu!"))

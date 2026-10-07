@@ -15,6 +15,13 @@ class Category(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete('home_menu_data')
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete('home_menu_data')
 
     def __str__(self):
         return self.name
@@ -34,6 +41,16 @@ class MenuItem(models.Model):
 
     class Meta:
         ordering = ['category__display_order', 'display_order', 'name']
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete('home_menu_data')
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete('home_menu_data')
 
     def __str__(self):
         return f"{self.name} - ₹{self.price} ({'Available' if self.is_available else 'Sold Out'})"
@@ -60,6 +77,16 @@ class AddOn(models.Model):
 
     class Meta:
         ordering = ['category_type', 'price', 'name']
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete('home_menu_data')
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete('home_menu_data')
 
     def __str__(self):
         return f"{self.name} (+₹{self.price})"

@@ -1,6 +1,7 @@
 import datetime
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Count
 from shop.models import ShopSettings
 from orders.models import Order
 
@@ -9,8 +10,8 @@ def get_slot_configuration():
     return {
         'shop_open': settings.shop_open,
         'online_orders_enabled': settings.online_orders_enabled,
-        'opening_time': settings.opening_time,
-        'closing_time': settings.closing_time,
+        'opening_time': settings.opening_time or datetime.time(17, 0),
+        'closing_time': settings.closing_time or datetime.time(22, 0),
         'buffer_mins': settings.preparation_buffer_mins,
         'interval_mins': settings.slot_interval_mins,
         'max_orders_per_slot': settings.max_orders_per_slot,
@@ -62,20 +63,20 @@ def get_available_pickup_slots(reference_dt=None):
     else:
         curr_slot = earliest_allowed.replace(second=0, microsecond=0)
 
-    # Collect existing confirmed paid orders for today
+    # Collect existing confirmed paid orders for today grouped by slot time
     active_statuses = ['CONFIRMED', 'PREPARING', 'READY']
     existing_orders = Order.objects.filter(
         pickup_slot_time__gte=shop_open_dt,
         pickup_slot_time__lte=shop_close_dt,
         payment_status='PAID',
         order_status__in=active_statuses
-    ).values('pickup_slot_time')
+    ).values('pickup_slot_time').annotate(booked=Count('id'))
 
     # Count orders per slot time
-    booked_counts = {}
-    for o in existing_orders:
-        slot_iso = o['pickup_slot_time'].isoformat()
-        booked_counts[slot_iso] = booked_counts.get(slot_iso, 0) + 1
+    booked_counts = {
+        o['pickup_slot_time'].isoformat(): o['booked']
+        for o in existing_orders
+    }
 
     slots = []
     while curr_slot <= shop_close_dt:

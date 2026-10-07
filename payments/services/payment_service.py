@@ -87,6 +87,19 @@ class PaymentService:
 
         validated_order_lines = []
 
+        # Batch fetch all menu items and add-ons in advance to eliminate round-trip DB latency
+        all_item_ids = [line.get('id') for line in cart_items if line.get('id') is not None]
+        all_addon_ids = [
+            a.get('id') for line in cart_items
+            for a in line.get('addons', []) if a.get('id') is not None
+        ]
+
+        items_by_id = {item.id: item for item in MenuItem.objects.filter(id__in=all_item_ids)}
+        addons_by_id = {
+            addon.id: addon
+            for addon in AddOn.objects.filter(id__in=all_addon_ids).prefetch_related('applicable_items')
+        }
+
         for line in cart_items:
             item_id = line.get('id')
             try:
@@ -102,9 +115,8 @@ class PaymentService:
             is_parcel = bool(line.get('isParcel', False))
             addon_entries = line.get('addons', [])
 
-            try:
-                db_item = MenuItem.objects.get(id=item_id)
-            except MenuItem.DoesNotExist:
+            db_item = items_by_id.get(item_id)
+            if not db_item:
                 raise ValueError(f"Menu item with ID {item_id} does not exist.")
 
             if not db_item.is_available:
@@ -118,16 +130,16 @@ class PaymentService:
             line_addons_sum = Decimal('0.00')
             for a in addon_entries:
                 a_id = a.get('id')
-                try:
-                    db_addon = AddOn.objects.get(id=a_id)
-                    if not db_addon.is_available:
-                        continue
-                    if db_addon.applicable_items.exists() and not db_addon.applicable_items.filter(id=db_item.id).exists():
-                        raise ValueError(f"Add-on '{db_addon.name}' is not applicable to '{db_item.name}'.")
-                    validated_addons.append(db_addon)
-                    line_addons_sum += db_addon.price
-                except AddOn.DoesNotExist:
+                db_addon = addons_by_id.get(a_id)
+                if not db_addon or not db_addon.is_available:
                     continue
+
+                applicable_ids = {i.id for i in db_addon.applicable_items.all()}
+                if applicable_ids and db_item.id not in applicable_ids:
+                    raise ValueError(f"Add-on '{db_addon.name}' is not applicable to '{db_item.name}'.")
+
+                validated_addons.append(db_addon)
+                line_addons_sum += db_addon.price
 
             addons_total += line_addons_sum * qty
 

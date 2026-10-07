@@ -47,6 +47,11 @@ class StuffAndPuffBusinessLogicTests(TestCase):
             future_dt += datetime.timedelta(minutes=(10 - remainder))
         self.today_slot = future_dt.replace(second=0, microsecond=0)
 
+    def tearDown(self):
+        from django.core.cache import cache
+        cache.delete('shop_settings_singleton')
+        cache.delete('home_menu_data')
+
     # 1. PARCEL CALCULATION TEST
     def test_parcel_calculation(self):
         """
