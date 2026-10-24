@@ -21,15 +21,20 @@ def home_view(request):
         # Reuse the already prefetched items for the client customization modal (0 extra DB queries)
         all_items_with_addons = [item for cat in categories for item in cat.items.all()]
 
+        # Get unique momo sauces for the showcase
+        momo_sauces = list(AddOn.objects.filter(category_type='SAUCE', is_available=True).order_by('id'))
+
         menu_data = {
             'categories': categories,
             'all_items_with_addons': all_items_with_addons,
+            'momo_sauces': momo_sauces,
         }
         cache.set('home_menu_data', menu_data, 300)
 
     context = {
         'categories': menu_data['categories'],
         'all_items_with_addons': menu_data['all_items_with_addons'],
+        'momo_sauces': menu_data.get('momo_sauces', []),
     }
     return render(request, 'home.html', context)
 

@@ -415,6 +415,49 @@ body {
   gap: 8px;
 }
 
+.card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Indian Standard FSSAI Food Classification Badges */
+.diet-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 2px;
+  border: 1.5px solid;
+  flex-shrink: 0;
+  background-color: #FFFFFF;
+}
+
+.diet-badge.veg {
+  border-color: #2B8A3E;
+}
+
+.diet-badge.veg::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #2B8A3E;
+}
+
+.diet-badge.non-veg {
+  border-color: #C92A2A;
+}
+
+.diet-badge.non-veg::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #C92A2A;
+}
+
 .item-name {
   font-size: 1.05rem;
   font-weight: 700;
@@ -455,6 +498,153 @@ body {
   font-weight: 700;
   padding: 2px 6px;
   border-radius: var(--radius-sm);
+}
+
+/* Pan Fry Momos Signature Sauces Showcase */
+.sauces-showcase {
+  background: #FFFDF9;
+  border: 1.5px solid #F6D3B3;
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.sauces-showcase-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.sauces-showcase-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  letter-spacing: 0.03em;
+  color: #C05621;
+  text-transform: uppercase;
+}
+
+.sauces-showcase-desc {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+
+.sauces-pill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.sauce-pill-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE4DA;
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sauce-pill-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sauce-pill-price {
+  font-weight: 800;
+  color: var(--primary);
+  font-size: 0.82rem;
+}
+
+.sauce-pill-spice {
+  font-size: 0.74rem;
+  color: #C53030;
+  font-weight: 600;
+}
+
+/* How Pickup Works Section */
+.how-it-works-section {
+  padding: 24px 16px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.how-it-works-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.section-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--primary);
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.section-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-main);
+  margin-bottom: 16px;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 768px) {
+  .steps-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.step-card {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.step-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #181614;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.step-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.step-desc {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  line-height: 1.45;
 }
 
 .card-actions {

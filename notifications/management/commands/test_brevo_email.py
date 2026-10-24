@@ -23,14 +23,14 @@ class Command(BaseCommand):
         recipient = options.get('recipient', '').strip() or sender_email
 
         self.stdout.write(self.style.NOTICE("=" * 60))
-        self.stdout.write(self.style.NOTICE("Stuff & Puff — Brevo Transactional Email Test"))
+        self.stdout.write(self.style.NOTICE("Stuff & Puff: Brevo Transactional Email Test"))
         self.stdout.write(self.style.NOTICE("=" * 60))
 
         self.stdout.write(f"Sender Name  : {sender_name}")
         self.stdout.write(f"Sender Email : {sender_email or '[NOT CONFIGURED]'}")
         self.stdout.write(f"Recipient    : {recipient or '[NOT CONFIGURED]'}")
         self.stdout.write(f"API Key      : {'[CONFIGURED]' if has_api_key else '[MISSING]'}")
-        self.stdout.write("Subject      : Stuff & Puff — Brevo Test Email")
+        self.stdout.write("Subject      : Stuff & Puff - Brevo Test Email")
         self.stdout.write("-" * 60)
 
         if not has_api_key:

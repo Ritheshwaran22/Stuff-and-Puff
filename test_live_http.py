@@ -15,7 +15,7 @@ def test_endpoints():
         assert 'Momos' in html and 'Veg Momos' in html, "Momos missing"
         assert 'Waffles' in html and 'Bun' in html, "Waffles / Buns missing"
         assert 'Dragon Blaze' in html, "Sauces missing"
-        assert '5:00 PM – 10:00 PM' in html, "Timings missing"
+        assert ('5:00 PM - 10:00 PM' in html) or ('5:00 PM – 10:00 PM' in html), "Timings missing"
         print("[OK] Homepage responded with 200 OK and complete menu contents.")
 
     # 2. Slots API

@@ -20,7 +20,7 @@ def shop_context(request):
         'business_location': getattr(settings, 'BUSINESS_LOCATION', 'Near GH Bus Stop, Chengalpattu'),
         'business_location_details': getattr(settings, 'BUSINESS_LOCATION_DETAILS', 'Right side near GH Bus Stop, Chengalpattu'),
         'business_contact': getattr(settings, 'BUSINESS_CONTACT', '+91 83101 04426'),
-        'business_hours': "5:00 PM – 10:00 PM",
+        'business_hours': "5:00 PM - 10:00 PM",
         'google_maps_directions_url': getattr(
             settings,
             'GOOGLE_MAPS_DIRECTIONS_URL',

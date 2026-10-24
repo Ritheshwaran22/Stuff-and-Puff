@@ -9,7 +9,7 @@
       <h1 class="hero-headline">
         MOMOS. <span>WAFFLES.</span> BUNS.
       </h1>
-      <p class="hero-subtitle">Freshly prepared for pickup.</p>
+      <p class="hero-subtitle">Freshly prepared roadside takeaway near GH Bus Stop, Chengalpattu.</p>
       
       <div class="hero-meta">
         {% if is_shop_open and is_online_orders_enabled %}
@@ -51,6 +51,31 @@
           ONLINE ORDERS PAUSED
         </button>
       {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- How Pre-Booking Pickup Works Section -->
+<section class="how-it-works-section" id="how-pickup-works">
+  <div class="how-it-works-inner">
+    <div class="section-label">HOW PRE-BOOKING WORKS</div>
+    <h2 class="section-title">Zero Waiting At The Cart</h2>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <div class="step-title">Select From Menu</div>
+        <div class="step-desc">Pick fresh momos with signature sauces, hot waffles, or toasted buns. Add takeaway parcel packaging if needed.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <div class="step-title">Choose 10-Min Slot</div>
+        <div class="step-desc">Select your pickup time (5:00 PM - 10:00 PM). We prepare orders with a 20-minute fresh cooking buffer.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <div class="step-title">Collect with Token</div>
+        <div class="step-desc">Show your unique token (e.g. SP1016) at our pushcart near GH Bus Stop. Fresh, piping hot, and ready.</div>
+      </div>
     </div>
   </div>
 </section>
@@ -120,12 +145,44 @@
         <span class="category-count">{{ category.items.all|length }} items</span>
       </div>
 
+      {% if category.slug == 'momos' and momo_sauces %}
+        <!-- Signature Pan Fry Sauces Showcase Banner -->
+        <div class="sauces-showcase">
+          <div class="sauces-showcase-header">
+            <span style="font-size: 1.25rem;">🔥</span>
+            <h3 class="sauces-showcase-title">Pan Fry Momos: Choose Your Signature Sauce (+₹50)</h3>
+          </div>
+          <p class="sauces-showcase-desc">
+            Prepared fresh to order. Select any momo below to pan-fry in our signature sauces, or enjoy them classic steamed.
+          </p>
+          <div class="sauces-pill-grid">
+            {% for sauce in momo_sauces %}
+              <div class="sauce-pill-card">
+                <div class="sauce-pill-name">
+                  <span>{{ sauce.name }}</span>
+                  <span class="sauce-pill-price">+₹{{ sauce.price|floatformat:0 }}</span>
+                </div>
+                {% if sauce.spice_level > 0 %}
+                  <span class="sauce-pill-spice">
+                    {% for _ in "x"|rjust:sauce.spice_level %}🌶️{% endfor %}
+                    {% if sauce.spice_level == 3 %}Spicy Heat{% else %}Medium Heat{% endif %}
+                  </span>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
       <div class="menu-grid">
         {% for item in category.items.all %}
           <div class="menu-card {% if not item.is_available %}sold-out{% endif %}" id="item-card-{{ item.id }}">
             <div>
               <div class="card-top">
-                <h3 class="item-name">{{ item.name }}</h3>
+                <div class="card-title-group">
+                  <span class="diet-badge {% if 'chicken' in item.name|lower or 'mixed' in item.name|lower %}non-veg{% else %}veg{% endif %}" title="{% if 'chicken' in item.name|lower or 'mixed' in item.name|lower %}Non-Vegetarian{% else %}Vegetarian{% endif %}"></span>
+                  <h3 class="item-name">{{ item.name }}</h3>
+                </div>
                 <div class="item-price">₹{{ item.price|floatformat:0 }}</div>
               </div>
 

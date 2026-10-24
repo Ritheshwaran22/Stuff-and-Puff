@@ -182,7 +182,7 @@ class BrevoService:
         """
         recipient = (to_email or getattr(settings, 'BREVO_SENDER_EMAIL', '')).strip()
         sender_name = getattr(settings, 'BREVO_SENDER_NAME', 'Stuff & Puff')
-        subject = "Stuff & Puff — Brevo Test Email"
+        subject = "Stuff & Puff - Brevo Test Email"
 
         context = {
             'recipient_email': recipient,
@@ -227,7 +227,7 @@ class BrevoService:
         else:
             payment_status_display = "Payment Pending"
 
-        subject = f"Order #{order.order_number} Received — Token {order.token} | Stuff & Puff"
+        subject = f"Order #{order.order_number} Received - Token {order.token} | Stuff & Puff"
         context = {
             'order': order,
             'pickup_time_str': full_pickup_str,
