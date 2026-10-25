@@ -1,6 +1,6 @@
 /**
  * Stuff & Puff | Chengalpattu - Shopping Cart & Ordering Engine
- * Handles Cart persistence, add-on selection, parcel calculation (₹5/item),
+ * Handles Cart persistence, multi-portion sauce customization, parcel calculation (₹5/item),
  * and checkout handoff.
  */
 
@@ -20,12 +20,16 @@
           const normalizedItem = {
             ...item,
             id: isNaN(numId) ? item.id : numId,
+            name: item.name || '',
+            price: parseFloat(item.price) || 0,
             quantity: parseInt(item.quantity, 10) || 1,
+            isParcel: Boolean(item.isParcel),
             addons: Array.isArray(item.addons) ? item.addons.map(a => {
               const aId = parseInt(a.id, 10);
               return {
-                ...a,
-                id: isNaN(aId) ? a.id : aId
+                id: isNaN(aId) ? a.id : aId,
+                name: a.name,
+                price: parseFloat(a.price) || 0
               };
             }) : []
           };
@@ -54,6 +58,13 @@
     const idStr = String(itemId);
     cart = cart.filter(item => String(item.id) !== idStr);
     saveCart();
+  }
+
+  function removeLineByIndex(index) {
+    if (index >= 0 && index < cart.length) {
+      cart.splice(index, 1);
+      saveCart();
+    }
   }
 
   function getCartSummary() {
@@ -93,6 +104,53 @@
     };
   }
 
+  function getItemCountInCart(itemId) {
+    const numId = parseInt(itemId, 10);
+    const idToMatch = isNaN(numId) ? String(itemId) : numId;
+    return cart.reduce((sum, item) => {
+      if (item.id === idToMatch || String(item.id) === String(idToMatch)) {
+        return sum + (parseInt(item.quantity, 10) || 0);
+      }
+      return sum;
+    }, 0);
+  }
+
+  function updateMenuButtons() {
+    document.querySelectorAll('.menu-card').forEach(card => {
+      const btn = card.querySelector('.btn-add');
+      const qtyWrap = card.querySelector('.menu-qty-control');
+      if (!btn) return;
+
+      const rawId = btn.dataset.itemId;
+      if (!rawId) return;
+
+      const count = getItemCountInCart(rawId);
+      const isCustomizable = btn.classList.contains('js-customize-item');
+
+      if (count > 0 && !btn.disabled) {
+        if (!qtyWrap) {
+          const newQtyWrap = document.createElement('div');
+          newQtyWrap.className = 'menu-qty-control';
+          newQtyWrap.innerHTML = `
+            <button type="button" class="btn-qty-menu btn-qty-dec" data-item-id="${rawId}" aria-label="Decrease quantity">−</button>
+            <span class="menu-qty-val">${count}</span>
+            <button type="button" class="btn-qty-menu btn-qty-inc" data-item-id="${rawId}" aria-label="Increase quantity">+</button>
+          `;
+          btn.style.display = 'none';
+          btn.parentNode.insertBefore(newQtyWrap, btn);
+        } else {
+          qtyWrap.style.display = 'inline-flex';
+          const valSpan = qtyWrap.querySelector('.menu-qty-val');
+          if (valSpan) valSpan.textContent = count;
+          btn.style.display = 'none';
+        }
+      } else {
+        if (qtyWrap) qtyWrap.style.display = 'none';
+        btn.style.display = 'inline-flex';
+      }
+    });
+  }
+
   function updateCartUI() {
     const summary = getCartSummary();
     const stickyBar = document.getElementById('stickyCartBar');
@@ -120,6 +178,7 @@
     }
 
     renderCartModalItems(summary);
+    updateMenuButtons();
   }
 
   function renderCartModalItems(summary) {
@@ -128,10 +187,10 @@
 
     if (cart.length === 0) {
       listContainer.innerHTML = `
-        <div style="text-align:center; padding: 32px 16px; color: var(--text-muted);">
+        <div class="empty-cart-view">
           <div style="font-size: 2.2rem; margin-bottom: 8px;">🛒</div>
-          <p style="font-weight: 600;">Your cart is empty</p>
-          <p style="font-size: 0.85rem; margin-top: 4px;">Select fresh momos, waffles, or buns from the menu to get started!</p>
+          <p style="font-weight: 700; font-size: 1rem; color: var(--text-main);">Your cart is empty</p>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Select delicious momos, waffles, or buns to get started!</p>
         </div>
       `;
       const checkoutBtn = document.getElementById('cartModalCheckoutBtn');
@@ -164,20 +223,20 @@
           <div class="cart-item-main">
             <div>
               <div class="cart-item-title">${item.name}</div>
-              ${addonNames.length > 0 ? `<div class="cart-item-addons">+ ${addonNames.join(', ')}</div>` : ''}
-              ${item.isParcel ? `<div style="font-size:0.75rem; color:#E8590C; font-weight:600;">Parcel (+₹${parcelChargeForLine.toFixed(0)})</div>` : ''}
+              ${addonNames.length > 0 ? `<div class="cart-item-addons">+ ${addonNames.join(', ')}</div>` : '<div class="cart-item-addons" style="color:var(--text-muted);">Classic / No Sauce</div>'}
+              ${item.isParcel ? `<div class="cart-item-parcel-tag">Takeaway Parcel (+₹${parcelChargeForLine.toFixed(0)})</div>` : ''}
             </div>
             <div class="cart-item-price">₹${lineTotal.toFixed(2)}</div>
           </div>
           <div class="cart-item-actions">
             <label class="cart-parcel-toggle">
               <input type="checkbox" class="cart-parcel-cb" data-index="${index}" ${item.isParcel ? 'checked' : ''}>
-              Pack for Parcel (+₹5/item)
+              Takeaway packaging (+₹5/item)
             </label>
             <div class="qty-control">
-              <button type="button" class="qty-btn btn-cart-dec" data-index="${index}">−</button>
+              <button type="button" class="qty-btn btn-cart-dec" data-index="${index}" aria-label="Decrease quantity">−</button>
               <span class="qty-val">${q}</span>
-              <button type="button" class="qty-btn btn-cart-inc" data-index="${index}">+</button>
+              <button type="button" class="qty-btn btn-cart-inc" data-index="${index}" aria-label="Increase quantity">+</button>
             </div>
           </div>
         </div>
@@ -196,19 +255,19 @@
         </div>
         ${summary.addonsSubtotal > 0 ? `
           <div class="price-row">
-            <span>Add-ons / Sauces</span>
+            <span>Signature Sauces / Add-ons</span>
             <span>+₹${summary.addonsSubtotal.toFixed(2)}</span>
           </div>
         ` : ''}
         <div class="price-row highlight">
-          <span>Parcel Charges (${summary.totalParcelQty} × ₹5.00)</span>
+          <span>Parcel Packaging (${summary.totalParcelQty} × ₹5.00)</span>
           <span>₹${summary.parcelTotal.toFixed(2)}</span>
         </div>
         <div class="parcel-notice">
-          Parcel charge is ₹5 per quantity of takeaway items to ensure safe packaging.
+          Parcel charge is ₹5 per takeaway item quantity for sturdy, hygienic packaging.
         </div>
         <div class="price-row total">
-          <span>To Pay</span>
+          <span>Total To Pay</span>
           <span>₹${summary.grandTotal.toFixed(2)}</span>
         </div>
       `;
@@ -225,11 +284,12 @@
     const normAddons = (item.addons || []).map(a => {
       const aId = parseInt(a.id, 10);
       return {
-        ...a,
-        id: isNaN(aId) ? a.id : aId
+        id: isNaN(aId) ? a.id : aId,
+        name: a.name,
+        price: parseFloat(a.price) || 0
       };
     });
-    // Generate a unique line key based on itemId, selected addons, and parcel state
+    // Generate unique line key
     const addonIds = normAddons.map(a => a.id).sort().join('_');
     const parcelKey = item.isParcel ? 'parcel' : 'dine';
     const lineKey = `${normId}_${addonIds}_${parcelKey}`;
@@ -239,10 +299,12 @@
       existing.quantity += parseInt(item.quantity, 10) || 1;
     } else {
       cart.push({
-        ...item,
         id: normId,
+        name: item.name,
+        price: parseFloat(item.price) || 0,
         addons: normAddons,
         lineKey,
+        isParcel: Boolean(item.isParcel),
         quantity: parseInt(item.quantity, 10) || 1
       });
     }
@@ -253,6 +315,7 @@
   window.SPCart = {
     getCart: () => cart,
     getSummary: getCartSummary,
+    getItemCount: getItemCountInCart,
     clearCart: () => {
       cart = [];
       saveCart();
@@ -260,8 +323,38 @@
     removeItemById: (itemId) => {
       removeItemById(itemId);
     },
+    removeLineByIndex: (index) => {
+      removeLineByIndex(index);
+    },
     addItem: (item) => {
       addToCart(item);
+      openCartModal();
+    },
+    addMultiplePortions: (baseItem, portionsArray, isParcel) => {
+      // Group portions by sauce ID
+      const groups = {};
+      portionsArray.forEach(p => {
+        const sauceId = p.sauce ? p.sauce.id : 'nosauce';
+        if (!groups[sauceId]) {
+          groups[sauceId] = {
+            sauce: p.sauce,
+            qty: 0
+          };
+        }
+        groups[sauceId].qty += 1;
+      });
+
+      Object.values(groups).forEach(g => {
+        addToCart({
+          id: baseItem.id,
+          name: baseItem.name,
+          price: baseItem.price,
+          quantity: g.qty,
+          isParcel: Boolean(isParcel),
+          addons: g.sauce ? [g.sauce] : []
+        });
+      });
+
       openCartModal();
     },
     openModal: () => openCartModal(),
@@ -308,6 +401,48 @@
         if (e.target === modal) closeCartModal();
       });
     }
+
+    // Delegate menu quantity buttons on cards
+    document.addEventListener('click', (e) => {
+      const incBtn = e.target.closest('.btn-qty-inc');
+      const decBtn = e.target.closest('.btn-qty-dec');
+
+      if (incBtn) {
+        const rawId = incBtn.dataset.itemId;
+        const card = incBtn.closest('.menu-card');
+        const custBtn = card ? card.querySelector('.js-customize-item') : null;
+        if (custBtn) {
+          // Customizable item -> open customize sheet to configure new portion!
+          custBtn.click();
+        } else {
+          // Non-customizable item -> directly increment in cart
+          const existing = cart.find(it => String(it.id) === String(rawId));
+          if (existing) {
+            existing.quantity += 1;
+            saveCart();
+          }
+        }
+      } else if (decBtn) {
+        const rawId = decBtn.dataset.itemId;
+        // Find matching item lines in cart
+        const matchingLines = [];
+        cart.forEach((it, idx) => {
+          if (String(it.id) === String(rawId)) {
+            matchingLines.push(idx);
+          }
+        });
+
+        if (matchingLines.length > 0) {
+          // Decrement the last added line
+          const lastIndex = matchingLines[matchingLines.length - 1];
+          cart[lastIndex].quantity -= 1;
+          if (cart[lastIndex].quantity <= 0) {
+            cart.splice(lastIndex, 1);
+          }
+          saveCart();
+        }
+      }
+    });
 
     // Delegate cart item interactions (+, -, parcel checkbox)
     const listContainer = document.getElementById('cartItemsList');

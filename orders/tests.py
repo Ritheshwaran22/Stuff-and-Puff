@@ -40,6 +40,9 @@ class StuffAndPuffBusinessLogicTests(TestCase):
         self.dragon_sauce = AddOn.objects.create(name='Dragon Blaze Momos Sauce', price=Decimal('50.00'), category_type='SAUCE', is_available=True)
         self.dragon_sauce.applicable_items.add(self.veg_momos, self.chicken_momos)
 
+        self.garlic_sauce = AddOn.objects.create(name='Garlic Cheese Blast Momos Sauce', price=Decimal('50.00'), category_type='SAUCE', is_available=True)
+        self.garlic_sauce.applicable_items.add(self.veg_momos, self.chicken_momos)
+
         # Dynamic operational pickup slot 40 minutes in future
         future_dt = now + datetime.timedelta(minutes=40)
         remainder = future_dt.minute % 10
@@ -577,5 +580,120 @@ class StuffAndPuffBusinessLogicTests(TestCase):
         self.assertFalse(data['success'])
         self.assertEqual(data['invalid_item_id'], 99999)
         self.assertIn("no longer available", data['error'])
+
+    # 13. MOMO SAUCE CUSTOMIZATION SCENARIOS (A, B, C, D)
+    def test_scenario_a_one_portion_one_sauce_or_no_sauce(self):
+        """Scenario A: One momo portion with one sauce (+₹50), or no sauce (₹0)"""
+        # With 1 sauce: Veg momos (70) + Dragon Blaze (50) = 120
+        cart_with_sauce = [{
+            'id': self.veg_momos.id,
+            'quantity': 1,
+            'isParcel': False,
+            'addons': [{'id': self.dragon_sauce.id, 'name': self.dragon_sauce.name, 'price': 50.0}]
+        }]
+        order, _ = PaymentService.create_pending_order("UserA", "9876543210", self.today_slot, cart_with_sauce)
+        self.assertEqual(order.subtotal, Decimal('70.00'))
+        self.assertEqual(order.addon_total, Decimal('50.00'))
+        self.assertEqual(order.total_amount, Decimal('120.00'))
+
+        # With No Sauce: Veg momos (70) + No sauce = 70
+        cart_no_sauce = [{
+            'id': self.veg_momos.id,
+            'quantity': 1,
+            'isParcel': False,
+            'addons': []
+        }]
+        order2, _ = PaymentService.create_pending_order("UserA", "9876543210", self.today_slot, cart_no_sauce)
+        self.assertEqual(order2.subtotal, Decimal('70.00'))
+        self.assertEqual(order2.addon_total, Decimal('0.00'))
+        self.assertEqual(order2.total_amount, Decimal('70.00'))
+
+    def test_scenario_b_two_portions_different_sauces(self):
+        """
+        Scenario B: Two momo portions with different sauces:
+        Portion 1: Dragon Blaze (+₹50)
+        Portion 2: Garlic Cheese Blast (+₹50)
+        Total: (70 * 2) + 50 + 50 = ₹240
+        """
+        cart = [
+            {
+                'id': self.veg_momos.id,
+                'quantity': 1,
+                'isParcel': False,
+                'addons': [{'id': self.dragon_sauce.id, 'name': self.dragon_sauce.name, 'price': 50.0}]
+            },
+            {
+                'id': self.veg_momos.id,
+                'quantity': 1,
+                'isParcel': False,
+                'addons': [{'id': self.garlic_sauce.id, 'name': self.garlic_sauce.name, 'price': 50.0}]
+            }
+        ]
+        order, _ = PaymentService.create_pending_order("UserB", "9876543210", self.today_slot, cart)
+        self.assertEqual(order.subtotal, Decimal('140.00'))
+        self.assertEqual(order.addon_total, Decimal('100.00'))
+        self.assertEqual(order.total_amount, Decimal('240.00'))
+        self.assertEqual(order.items.count(), 2)
+
+    def test_scenario_c_two_portions_same_sauce(self):
+        """
+        Scenario C: Two momo portions with the same sauce:
+        Both portions use Dragon Blaze: (70 * 2) + (50 * 2) = ₹240
+        """
+        cart = [{
+            'id': self.veg_momos.id,
+            'quantity': 2,
+            'isParcel': False,
+            'addons': [{'id': self.dragon_sauce.id, 'name': self.dragon_sauce.name, 'price': 50.0}]
+        }]
+        order, _ = PaymentService.create_pending_order("UserC", "9876543210", self.today_slot, cart)
+        self.assertEqual(order.subtotal, Decimal('140.00'))
+        self.assertEqual(order.addon_total, Decimal('100.00'))
+        self.assertEqual(order.total_amount, Decimal('240.00'))
+
+    def test_scenario_d_two_portions_one_with_sauce_one_without(self):
+        """
+        Scenario D: One portion with sauce and one without:
+        Portion 1: Dragon Blaze (+₹50)
+        Portion 2: Classic Steamed (₹0)
+        Total: 70 + 50 + 70 = ₹190
+        """
+        cart = [
+            {
+                'id': self.veg_momos.id,
+                'quantity': 1,
+                'isParcel': False,
+                'addons': [{'id': self.dragon_sauce.id, 'name': self.dragon_sauce.name, 'price': 50.0}]
+            },
+            {
+                'id': self.veg_momos.id,
+                'quantity': 1,
+                'isParcel': False,
+                'addons': []
+            }
+        ]
+        order, _ = PaymentService.create_pending_order("UserD", "9876543210", self.today_slot, cart)
+        self.assertEqual(order.subtotal, Decimal('140.00'))
+        self.assertEqual(order.addon_total, Decimal('50.00'))
+        self.assertEqual(order.total_amount, Decimal('190.00'))
+
+    def test_reject_multiple_sauces_on_single_portion(self):
+        """
+        Security requirement: Attempting to pass multiple sauces on a single momo portion
+        must be rejected by server-side validation.
+        """
+        invalid_cart = [{
+            'id': self.veg_momos.id,
+            'quantity': 1,
+            'isParcel': False,
+            'addons': [
+                {'id': self.dragon_sauce.id, 'name': self.dragon_sauce.name, 'price': 50.0},
+                {'id': self.garlic_sauce.id, 'name': self.garlic_sauce.name, 'price': 50.0}
+            ]
+        }]
+        with self.assertRaises(ValueError) as ctx:
+            PaymentService.create_pending_order("Attacker", "9876543210", self.today_slot, invalid_cart)
+        self.assertIn("at most one sauce selected", str(ctx.exception))
+
 
 

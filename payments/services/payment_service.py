@@ -160,11 +160,18 @@ class PaymentService:
             line_item_total = db_item.price * qty
             items_subtotal += line_item_total
 
-            # Addons
+            # Addons validation: reject duplicates and enforce max 1 sauce per momo portion
             validated_addons = []
+            seen_addon_ids = set()
             line_addons_sum = Decimal('0.00')
+            sauce_count = 0
+
             for a in addon_entries:
                 a_id = a.get('id')
+                if a_id in seen_addon_ids:
+                    raise ValueError(f"Duplicate add-on selection detected for '{db_item.name}'.")
+                seen_addon_ids.add(a_id)
+
                 db_addon = addons_by_id.get(a_id)
                 if not db_addon or not db_addon.is_available:
                     continue
@@ -172,6 +179,11 @@ class PaymentService:
                 applicable_ids = {i.id for i in db_addon.applicable_items.all()}
                 if applicable_ids and db_item.id not in applicable_ids:
                     raise ValueError(f"Add-on '{db_addon.name}' is not applicable to '{db_item.name}'.")
+
+                if db_addon.category_type == 'SAUCE':
+                    sauce_count += 1
+                    if sauce_count > 1:
+                        raise ValueError(f"Each momo portion can have at most one sauce selected. Received multiple sauces for '{db_item.name}'.")
 
                 validated_addons.append(db_addon)
                 line_addons_sum += db_addon.price
