@@ -157,10 +157,22 @@
     const stickyCount = document.getElementById('stickyCartCount');
     const stickyTotal = document.getElementById('stickyCartTotal');
     const navCartBadge = document.getElementById('navCartBadge');
+    const desktopCartBadge = document.getElementById('desktopCartBadge');
+
+    // Toggle body class for mobile bottom padding reservation
+    if (summary.totalItems > 0) {
+      document.body.classList.add('has-cart-items');
+    } else {
+      document.body.classList.remove('has-cart-items');
+    }
 
     if (navCartBadge) {
       navCartBadge.textContent = summary.totalItems;
       navCartBadge.style.display = summary.totalItems > 0 ? 'inline-block' : 'none';
+    }
+
+    if (desktopCartBadge) {
+      desktopCartBadge.textContent = `${summary.totalItems} item${summary.totalItems === 1 ? '' : 's'}`;
     }
 
     if (stickyBar) {
@@ -177,31 +189,39 @@
       }
     }
 
-    renderCartModalItems(summary);
+    renderAllCartViews(summary);
     updateMenuButtons();
   }
 
-  function renderCartModalItems(summary) {
-    const listContainer = document.getElementById('cartItemsList');
-    if (!listContainer) return;
+  function renderAllCartViews(summary) {
+    const modalList = document.getElementById('cartItemsList');
+    const modalBreakdown = document.getElementById('cartPriceBreakdown');
+    const modalCheckoutBtn = document.getElementById('cartModalCheckoutBtn');
+
+    const desktopList = document.getElementById('desktopCartItemsList');
+    const desktopBreakdown = document.getElementById('desktopCartPriceBreakdown');
+    const desktopCheckoutBtn = document.getElementById('desktopCheckoutBtn');
 
     if (cart.length === 0) {
-      listContainer.innerHTML = `
-        <div class="empty-cart-view">
-          <div style="font-size: 2.2rem; margin-bottom: 8px;">🛒</div>
-          <p style="font-weight: 700; font-size: 1rem; color: var(--text-main);">Your cart is empty</p>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Select delicious momos, waffles, or buns to get started!</p>
+      const emptyHtml = `
+        <div class="empty-cart-view" style="text-align:center; padding: 28px 14px;">
+          <div style="font-size: 2rem; margin-bottom: 6px;">🛒</div>
+          <p style="font-weight: 700; font-size: 0.95rem; color: var(--text-main); margin-bottom: 2px;">Your cart is empty</p>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Add momos, waffles, or buns from the menu to start ordering!</p>
         </div>
       `;
-      const checkoutBtn = document.getElementById('cartModalCheckoutBtn');
-      if (checkoutBtn) checkoutBtn.disabled = true;
 
-      const breakdown = document.getElementById('cartPriceBreakdown');
-      if (breakdown) breakdown.style.display = 'none';
+      if (modalList) modalList.innerHTML = emptyHtml;
+      if (modalBreakdown) modalBreakdown.style.display = 'none';
+      if (modalCheckoutBtn) modalCheckoutBtn.disabled = true;
+
+      if (desktopList) desktopList.innerHTML = emptyHtml;
+      if (desktopBreakdown) desktopBreakdown.style.display = 'none';
+      if (desktopCheckoutBtn) desktopCheckoutBtn.disabled = true;
       return;
     }
 
-    let html = '';
+    let itemsHtml = '';
     cart.forEach((item, index) => {
       const q = parseInt(item.quantity, 10) || 1;
       const basePrice = (parseFloat(item.price) || 0) * q;
@@ -218,7 +238,7 @@
       const lineTotal = basePrice + addonPriceSum;
       const parcelChargeForLine = item.isParcel ? (q * PARCEL_UNIT_RATE) : 0;
 
-      html += `
+      itemsHtml += `
         <div class="cart-item-row" data-index="${index}">
           <div class="cart-item-main">
             <div>
@@ -243,38 +263,45 @@
       `;
     });
 
-    listContainer.innerHTML = html;
-
-    const breakdown = document.getElementById('cartPriceBreakdown');
-    if (breakdown) {
-      breakdown.style.display = 'flex';
-      breakdown.innerHTML = `
+    const breakdownHtml = `
+      <div class="price-row">
+        <span>Items Subtotal</span>
+        <span>₹${summary.itemsSubtotal.toFixed(2)}</span>
+      </div>
+      ${summary.addonsSubtotal > 0 ? `
         <div class="price-row">
-          <span>Items Subtotal</span>
-          <span>₹${summary.itemsSubtotal.toFixed(2)}</span>
+          <span>Signature Sauces / Add-ons</span>
+          <span>+₹${summary.addonsSubtotal.toFixed(2)}</span>
         </div>
-        ${summary.addonsSubtotal > 0 ? `
-          <div class="price-row">
-            <span>Signature Sauces / Add-ons</span>
-            <span>+₹${summary.addonsSubtotal.toFixed(2)}</span>
-          </div>
-        ` : ''}
-        <div class="price-row highlight">
-          <span>Parcel Packaging (${summary.totalParcelQty} × ₹5.00)</span>
-          <span>₹${summary.parcelTotal.toFixed(2)}</span>
-        </div>
-        <div class="parcel-notice">
-          Parcel charge is ₹5 per takeaway item quantity for sturdy, hygienic packaging.
-        </div>
-        <div class="price-row total">
-          <span>Total To Pay</span>
-          <span>₹${summary.grandTotal.toFixed(2)}</span>
-        </div>
-      `;
-    }
+      ` : ''}
+      <div class="price-row highlight">
+        <span>Parcel Packaging (${summary.totalParcelQty} × ₹5.00)</span>
+        <span>₹${summary.parcelTotal.toFixed(2)}</span>
+      </div>
+      <div class="parcel-notice">
+        Parcel charge is ₹5 per takeaway item quantity for sturdy, hygienic packaging.
+      </div>
+      <div class="price-row total">
+        <span>Total To Pay</span>
+        <span>₹${summary.grandTotal.toFixed(2)}</span>
+      </div>
+    `;
 
-    const checkoutBtn = document.getElementById('cartModalCheckoutBtn');
-    if (checkoutBtn) checkoutBtn.disabled = false;
+    // Render into modal
+    if (modalList) modalList.innerHTML = itemsHtml;
+    if (modalBreakdown) {
+      modalBreakdown.innerHTML = breakdownHtml;
+      modalBreakdown.style.display = 'flex';
+    }
+    if (modalCheckoutBtn) modalCheckoutBtn.disabled = false;
+
+    // Render into desktop sidebar
+    if (desktopList) desktopList.innerHTML = itemsHtml;
+    if (desktopBreakdown) {
+      desktopBreakdown.innerHTML = breakdownHtml;
+      desktopBreakdown.style.display = 'flex';
+    }
+    if (desktopCheckoutBtn) desktopCheckoutBtn.disabled = false;
   }
 
   // Add Item to Cart
@@ -444,47 +471,49 @@
       }
     });
 
-    // Delegate cart item interactions (+, -, parcel checkbox)
-    const listContainer = document.getElementById('cartItemsList');
-    if (listContainer) {
-      listContainer.addEventListener('click', (e) => {
-        const incBtn = e.target.closest('.btn-cart-inc');
-        const decBtn = e.target.closest('.btn-cart-dec');
+    // Delegate cart item interactions (+, -, parcel checkbox) for both modal and desktop sidebar
+    document.addEventListener('click', (e) => {
+      const incBtn = e.target.closest('.btn-cart-inc');
+      const decBtn = e.target.closest('.btn-cart-dec');
+      const desktopCheckout = e.target.closest('#desktopCheckoutBtn');
 
-        if (incBtn) {
-          const index = parseInt(incBtn.dataset.index, 10);
-          if (cart[index]) {
-            cart[index].quantity += 1;
-            saveCart();
-          }
-        } else if (decBtn) {
-          const index = parseInt(decBtn.dataset.index, 10);
-          if (cart[index]) {
-            cart[index].quantity -= 1;
-            if (cart[index].quantity <= 0) {
-              cart.splice(index, 1);
-            }
-            saveCart();
-          }
+      if (incBtn) {
+        const index = parseInt(incBtn.dataset.index, 10);
+        if (cart[index]) {
+          cart[index].quantity += 1;
+          saveCart();
         }
-      });
-
-      listContainer.addEventListener('change', (e) => {
-        if (e.target.classList.contains('cart-parcel-cb')) {
-          const index = parseInt(e.target.dataset.index, 10);
-          if (cart[index]) {
-            cart[index].isParcel = e.target.checked;
-            // Update lineKey
-            const addonIds = (cart[index].addons || []).map(a => a.id).sort().join('_');
-            const parcelKey = cart[index].isParcel ? 'parcel' : 'dine';
-            cart[index].lineKey = `${cart[index].id}_${addonIds}_${parcelKey}`;
-            saveCart();
+      } else if (decBtn) {
+        const index = parseInt(decBtn.dataset.index, 10);
+        if (cart[index]) {
+          cart[index].quantity -= 1;
+          if (cart[index].quantity <= 0) {
+            cart.splice(index, 1);
           }
+          saveCart();
         }
-      });
-    }
+      } else if (desktopCheckout) {
+        if (cart.length > 0) {
+          window.location.href = '/checkout/';
+        }
+      }
+    });
 
-    // Checkout button click
+    document.addEventListener('change', (e) => {
+      if (e.target.classList.contains('cart-parcel-cb')) {
+        const index = parseInt(e.target.dataset.index, 10);
+        if (cart[index]) {
+          cart[index].isParcel = e.target.checked;
+          // Update lineKey
+          const addonIds = (cart[index].addons || []).map(a => a.id).sort().join('_');
+          const parcelKey = cart[index].isParcel ? 'parcel' : 'dine';
+          cart[index].lineKey = `${cart[index].id}_${addonIds}_${parcelKey}`;
+          saveCart();
+        }
+      }
+    });
+
+    // Mobile Modal Checkout button click
     const checkoutBtn = document.getElementById('cartModalCheckoutBtn');
     if (checkoutBtn) {
       checkoutBtn.addEventListener('click', () => {
