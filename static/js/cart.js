@@ -165,7 +165,7 @@
             <div>
               <div class="cart-item-title">${item.name}</div>
               ${addonNames.length > 0 ? `<div class="cart-item-addons">+ ${addonNames.join(', ')}</div>` : ''}
-              ${item.isParcel ? `<div style="font-size:0.75rem; color:#E8590C; font-weight:600;">Parcel (+₹${parcelChargeForLine.toFixed(0)})</div>` : ''}
+              ${item.isParcel ? `<div style="font-size:0.75rem; color:var(--color-primary); font-weight:700;">Parcel (+₹${parcelChargeForLine.toFixed(0)})</div>` : ''}
             </div>
             <div class="cart-item-price">₹${lineTotal.toFixed(2)}</div>
           </div>

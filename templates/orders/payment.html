@@ -4,44 +4,45 @@
 {% block title %}Complete Online Payment | {{ business_name }}{% endblock %}
 
 {% block content %}
-<div class="container" style="padding: 32px 16px 60px; max-width: 540px;">
-  <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px 20px; box-shadow: var(--shadow-md);">
+<div class="container" style="padding: 40px 16px 80px; max-width: 560px;">
+  <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px 24px; box-shadow: var(--shadow-md);">
     
     <!-- Header -->
-    <div style="text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 18px;">
-      <div style="font-family: var(--font-heading); font-size: 1.3rem; letter-spacing: 0.04em;">
-        STUFF <span style="color: var(--primary);">&amp;</span> PUFF
+    <div style="text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 24px;">
+      <span class="section-tag" style="margin-bottom: 8px;">ORDER PAYMENT</span>
+      <div style="font-family: var(--font-heading); font-size: 1.5rem; letter-spacing: 0.04em; font-weight: 800; color: var(--text-main);">
+        STUFF <span style="color: var(--color-primary);">&amp;</span> PUFF
       </div>
-      <div style="font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-yellow); font-weight: 700;">
+      <div style="font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--color-gold); font-weight: 800; margin-top: 4px;">
         CHENGALPATTU OUTLET
       </div>
-      <div style="margin-top: 14px; font-size: 0.9rem; color: var(--text-muted);">
-        Order #{{ order.order_number }} &bull; Pickup at <strong>{{ order.pickup_slot_time|date:"g:i A" }}</strong>
+      <div style="margin-top: 16px; font-size: 0.92rem; color: var(--text-muted);">
+        Order #{{ order.order_number }} &bull; Pickup Slot: <strong style="color: var(--text-main);">{{ order.pickup_slot_time|date:"g:i A" }}</strong>
       </div>
-      <div style="font-size: 2.2rem; font-weight: 800; color: var(--text-main); margin-top: 4px;">
+      <div style="font-family: var(--font-heading); font-size: 2.8rem; font-weight: 900; color: var(--text-main); margin-top: 6px; letter-spacing: -0.02em;">
         ₹{{ order.total_amount|floatformat:2 }}
       </div>
     </div>
 
     <!-- Payment Methods Information -->
-    <div style="background: #F8F9FA; border: 1px solid #E9ECEF; border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
+    <div style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; margin-bottom: 24px;">
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-        <strong style="font-size: 0.88rem; color: #495057;">CASHFREE PAYMENT GATEWAY</strong>
-        <span style="background: #E3FAFC; color: #0C8599; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px;">
-          {% if cashfree_environment == 'production' %}SECURE CHECKOUT{% else %}SANDBOX TEST MODE{% endif %}
+        <strong style="font-family: var(--font-heading); font-size: 0.85rem; letter-spacing: 0.05em; color: var(--text-main); text-transform: uppercase;">CASHFREE PAYMENT GATEWAY</strong>
+        <span style="background: rgba(43,186,134,0.12); color: #2bba86; font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: var(--radius-full); border: 1px solid rgba(43,186,134,0.3);">
+          {% if cashfree_environment == 'production' %}SECURE CHECKOUT{% else %}SANDBOX SIMULATOR{% endif %}
         </span>
       </div>
 
-      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.45;">
-        Complete payment via UPI or Net Banking. Your order and pickup token are issued only after server-side verification:
+      <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+        Complete payment via UPI or Net Banking. Your order queue placement and pickup token are issued immediately upon verification.
       </p>
 
       <!-- Supported Methods: UPI and Net Banking -->
-      <div style="display: flex; flex-direction: column; gap: 8px;">
-        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600;">
-          <span>📱</span> <span>UPI &bull; Google Pay / PhonePe / Paytm / BHIM</span>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600; color: var(--text-main);">
+          <span>📱</span> <span>UPI &bull; Google Pay, PhonePe, Paytm, QR</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600;">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600; color: var(--text-main);">
           <span>🏦</span> <span>Net Banking &bull; SBI, HDFC, ICICI, Axis &amp; 50+ Banks</span>
         </div>
       </div>
@@ -49,8 +50,8 @@
 
     {% if payment.payment_session_id and payment.gateway_provider != 'SANDBOX' %}
       <!-- CASHFREE HOSTED / SDK CHECKOUT -->
-      <div style="text-align: center; padding: 10px 0 20px;">
-        <button type="button" class="hero-cta-btn" id="cashfreePayBtn" style="width: 100%; padding: 14px; font-size: 1.05rem;">
+      <div style="text-align: center; padding: 8px 0 16px;">
+        <button type="button" class="hero-cta-btn" id="cashfreePayBtn" style="width: 100%; padding: 16px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
           PAY ₹{{ order.total_amount|floatformat:2 }} WITH CASHFREE &rarr;
         </button>
       </div>
@@ -76,10 +77,10 @@
 
     {% else %}
       <!-- SANDBOX / SIMULATOR GATEWAY INTERFACE (Development & Testing) -->
-      <form action="/orders/verify/{{ order.id }}/" method="POST" style="margin-bottom: 10px;">
+      <form action="/orders/verify/{{ order.id }}/" method="POST" style="margin-bottom: 12px;">
         {% csrf_token %}
         <input type="hidden" name="gateway_payment_id" value="cf_pay_sim_{{ order.id }}_{% now 'U' %}">
-        <button type="submit" class="hero-cta-btn" id="simulateSuccessBtn" style="width: 100%; padding: 14px; font-size: 1.05rem;">
+        <button type="submit" class="hero-cta-btn" id="simulateSuccessBtn" style="width: 100%; padding: 16px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
           AUTHORIZE &amp; PAY ₹{{ order.total_amount|floatformat:2 }} &rarr;
         </button>
       </form>
@@ -87,7 +88,7 @@
       <form action="/orders/verify/{{ order.id }}/" method="POST">
         {% csrf_token %}
         <input type="hidden" name="simulate_fail" value="true">
-        <button type="submit" id="simulateFailBtn" style="width: 100%; background: none; border: 1px dashed #FFA8A8; color: #E03131; padding: 8px; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.82rem; cursor: pointer;">
+        <button type="submit" id="simulateFailBtn" style="width: 100%; background: none; border: 1px dashed rgba(240,62,62,0.4); color: #ff6b6b; padding: 10px; border-radius: var(--radius-sm); font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">
           Simulate Payment Failure / Cancel
         </button>
       </form>

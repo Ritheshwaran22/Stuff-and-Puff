@@ -2,13 +2,17 @@
 {% block title %}Online Ordering Unavailable | {{ business_name }}{% endblock %}
 
 {% block content %}
-<div class="container" style="padding: 48px 16px; max-width: 600px; text-align: center;">
-  <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 36px 20px; box-shadow: var(--shadow-sm);">
-    <div style="font-size: 3rem; margin-bottom: 12px;">
+<div class="container" style="padding: 56px 16px 80px; max-width: 600px; text-align: center;">
+  <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 44px 28px; box-shadow: var(--shadow-sm);">
+    <div style="font-size: 3.2rem; margin-bottom: 16px;">
       {% if not is_shop_open %}🚪{% else %}⏸️{% endif %}
     </div>
 
-    <h1 style="font-family: var(--font-heading); font-size: 1.8rem; text-transform: uppercase; margin-bottom: 8px;">
+    <span class="section-tag" style="margin-bottom: 8px;">
+      {% if not is_shop_open %}SERVICE HOURS: 5 PM – 10 PM{% else %}KITCHEN CAPACITY PAUSE{% endif %}
+    </span>
+
+    <h1 style="font-family: var(--font-heading); font-size: clamp(1.8rem, 4vw, 2.3rem); font-weight: 800; text-transform: uppercase; margin-bottom: 12px; color: var(--text-main);">
       {% if not is_shop_open %}
         We're Closed Right Now
       {% else %}
@@ -16,17 +20,17 @@
       {% endif %}
     </h1>
 
-    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px; line-height: 1.6;">
+    <p style="color: var(--text-muted); font-size: 0.98rem; margin-bottom: 28px; line-height: 1.6; max-width: 480px; margin-left: auto; margin-right: auto;">
       {% if not is_shop_open %}
-        Online pre-booking will be available when the shop opens.<br>
-        Standard Operating Hours: <strong>{{ business_hours }}</strong>
+        Online pre-booking will unlock as soon as our pushcart fires up.<br>
+        Daily Operating Hours: <strong style="color: var(--color-gold);">{{ business_hours }}</strong>
       {% else %}
-        Online orders are temporarily paused by our pushcart staff due to high counter rush.<br>
-        Please check back in a few minutes or visit our cart at <strong>{{ business_location }}</strong>.
+        Online orders are temporarily paused by our street counter team to clear current in-flight kitchen queues.<br>
+        Please check back shortly or visit us in person at <strong style="color: var(--color-gold);">{{ business_location }}</strong>.
       {% endif %}
     </p>
 
-    <a href="/#menu" class="hero-cta-btn" style="text-decoration: none;">
+    <a href="/#menu" class="hero-cta-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 14px 28px;">
       VIEW MENU &rarr;
     </a>
   </div>

@@ -1,115 +1,135 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Checkout &amp; Pickup Time | {{ business_name }}{% endblock %}
+{% block title %}Checkout &amp; Pickup Slot | {{ business_name }}{% endblock %}
 
 {% block content %}
-<div class="container" style="padding: 24px 16px 60px; max-width: 680px;">
-  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-    <h1 style="font-family: var(--font-heading); font-size: 1.85rem; text-transform: uppercase; letter-spacing: 0.02em;">
-      Pickup Checkout
-    </h1>
-    <a href="/#menu" style="color: var(--text-muted); text-decoration: none; font-size: 0.88rem; font-weight: 600;">
-      &larr; Add more items
+<div class="container" style="padding: 40px 16px 80px; max-width: 720px;">
+  <!-- Header Bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; border-bottom: 1px solid var(--border-color); padding-bottom: 18px;">
+    <div>
+      <span class="section-tag" style="margin-bottom: 6px;">LIVE PRE-ORDER</span>
+      <h1 style="font-family: var(--font-heading); font-size: clamp(1.8rem, 4vw, 2.3rem); font-weight: 800; text-transform: uppercase; letter-spacing: -0.02em; margin: 0; color: var(--text-main);">
+        Pickup Checkout
+      </h1>
+    </div>
+    <a href="/#menu" style="color: var(--color-primary); text-decoration: none; font-size: 0.88rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: rgba(223,74,24,0.1); border: 1px solid rgba(223,74,24,0.25); border-radius: var(--radius-full); transition: all 0.2s;">
+      &larr; Browse Menu
     </a>
   </div>
 
-  <div id="checkoutEmptyWarning" style="display: none; background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 32px 16px; text-align: center;">
-    <div style="font-size: 2.5rem; margin-bottom: 8px;">🛒</div>
-    <h3>Your cart is empty</h3>
-    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; margin-bottom: 16px;">Please choose items from our menu before proceeding to checkout.</p>
-    <a href="/#menu" class="hero-cta-btn" style="text-decoration: none;">BROWSE MENU</a>
+  <!-- Empty Cart Warning -->
+  <div id="checkoutEmptyWarning" style="display: none; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 48px 24px; text-align: center;">
+    <div style="font-size: 3rem; margin-bottom: 12px;">🛒</div>
+    <h3 style="font-family: var(--font-heading); font-size: 1.5rem; text-transform: uppercase; margin-bottom: 8px;">Your cart is empty</h3>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 24px; max-width: 400px; margin-left: auto; margin-right: auto;">
+      Choose from our steaming hot momos, crisp waffles, or Chengalpattu sweet buns before checking out.
+    </p>
+    <a href="/#menu" class="hero-cta-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">BROWSE MENU NOW</a>
   </div>
 
-  <form id="checkoutForm" style="display: flex; flex-direction: column; gap: 18px;">
+  <!-- Checkout Form -->
+  <form id="checkoutForm" style="display: flex; flex-direction: column; gap: 24px;">
     {% csrf_token %}
 
     <!-- 1. Customer Details -->
-    <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm);">
-      <h2 style="font-family: var(--font-heading); font-size: 1.25rem; text-transform: uppercase; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
-        1. Customer Details
-      </h2>
-      <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <span style="font-family: var(--font-heading); font-size: 0.85rem; font-weight: 800; background: var(--color-primary); color: #FFF; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">1</span>
+        <h2 style="font-family: var(--font-heading); font-size: 1.25rem; text-transform: uppercase; letter-spacing: 0.02em; margin: 0; color: var(--text-main);">
+          Customer Information
+        </h2>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px;">
         <div>
-          <label for="customerName" style="display: block; font-weight: 700; font-size: 0.88rem; margin-bottom: 4px;">
-            Full Name <span style="color: #E03131;">*</span>
+          <label for="customerName" style="display: block; font-weight: 700; font-size: 0.88rem; margin-bottom: 6px; color: var(--text-main);">
+            Full Name <span style="color: var(--color-primary);">*</span>
           </label>
-          <input type="text" id="customerName" name="customer_name" required placeholder="Enter your name"
-                 style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.95rem;">
+          <input type="text" id="customerName" name="customer_name" required placeholder="Enter your full name"
+                 style="width: 100%; padding: 12px 14px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.95rem; color: var(--text-main); outline: none; transition: border-color 0.2s;">
         </div>
 
         <div>
-          <label for="customerMobile" style="display: block; font-weight: 700; font-size: 0.88rem; margin-bottom: 4px;">
-            Mobile Number <span style="color: #E03131;">*</span> (for order identification)
+          <label for="customerMobile" style="display: block; font-weight: 700; font-size: 0.88rem; margin-bottom: 6px; color: var(--text-main);">
+            Mobile Number <span style="color: var(--color-primary);">*</span>
           </label>
           <input type="tel" id="customerMobile" name="customer_mobile" required pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number"
-                 style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.95rem;">
-          <span style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; display: block;">
-            Your mobile number is used to identify your order and pickup token at the counter.
+                 style="width: 100%; padding: 12px 14px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.95rem; color: var(--text-main); outline: none; transition: border-color 0.2s;">
+          <span style="font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; display: block;">
+            Used to identify your order and announce your pickup token at the counter.
           </span>
         </div>
 
         <div>
-          <label for="customerEmail" style="display: block; font-weight: 700; font-size: 0.88rem; margin-bottom: 4px;">
-            Email Address <span style="font-weight: normal; color: var(--text-muted); font-size: 0.8rem;">(Optional - for email updates)</span>
+          <label for="customerEmail" style="display: block; font-weight: 700; font-size: 0.88rem; margin-bottom: 6px; color: var(--text-main);">
+            Email Address <span style="font-weight: normal; color: var(--text-muted); font-size: 0.8rem;">(Optional - for receipt)</span>
           </label>
           <input type="email" id="customerEmail" name="customer_email" placeholder="you@example.com"
-                 style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.95rem;">
-          <span style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; display: block;">
-            Get pre-booking confirmations and payment receipts sent to your inbox.
+                 style="width: 100%; padding: 12px 14px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.95rem; color: var(--text-main); outline: none; transition: border-color 0.2s;">
+          <span style="font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; display: block;">
+            Receive your order receipt and instant token confirmation email.
           </span>
         </div>
       </div>
     </div>
 
     <!-- 2. Pickup Time Selection -->
-    <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm);">
-      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
-        <h2 style="font-family: var(--font-heading); font-size: 1.25rem; text-transform: uppercase;">
-          2. Select Pickup Time Slot
-        </h2>
-        <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">20-min buffer required</span>
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-family: var(--font-heading); font-size: 0.85rem; font-weight: 800; background: var(--color-primary); color: #FFF; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">2</span>
+          <h2 style="font-family: var(--font-heading); font-size: 1.25rem; text-transform: uppercase; letter-spacing: 0.02em; margin: 0; color: var(--text-main);">
+            Pickup Time Slot
+          </h2>
+        </div>
+        <span style="font-size: 0.75rem; color: var(--color-gold); font-weight: 700; background: rgba(229,169,59,0.1); border: 1px solid rgba(229,169,59,0.25); padding: 4px 10px; border-radius: var(--radius-full);">
+          20-Min Kitchen Prep Buffer
+        </span>
       </div>
 
-      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-        Pick a 10-minute slot for freshly prepared food collection. Max 2 orders per slot:
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+        Select your 10-minute pickup window. We prepare fresh right before you arrive (strictly max 2 orders/slot):
       </p>
 
-      <div id="slotsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; max-height: 260px; overflow-y: auto; padding: 4px;">
+      <div id="slotsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; max-height: 280px; overflow-y: auto; padding-right: 4px;">
         {% if available_slots %}
           {% for slot in available_slots %}
-            <label style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 8px; border: 2px solid {% if slot.is_available %}#E7E0D6{% else %}#FFA8A8{% endif %}; border-radius: var(--radius-sm); background: {% if slot.is_available %}#FBF9F5{% else %}#FFF5F5{% endif %}; cursor: {% if slot.is_available %}pointer{% else %}not-allowed{% endif %}; opacity: {% if slot.is_available %}1{% else %}0.65{% endif %};">
+            <label class="slot-card-label" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 10px; border: 1.5px solid {% if slot.is_available %}var(--border-color){% else %}rgba(240,62,62,0.3){% endif %}; border-radius: var(--radius-md); background: {% if slot.is_available %}var(--bg-elevated){% else %}rgba(240,62,62,0.06){% endif %}; cursor: {% if slot.is_available %}pointer{% else %}not-allowed{% endif %}; opacity: {% if slot.is_available %}1{% else %}0.55{% endif %}; transition: all 0.2s;">
               <input type="radio" name="pickup_slot" value="{{ slot.iso }}" {% if not slot.is_available %}disabled{% endif %} style="display: none;" class="slot-radio">
-              <span style="font-weight: 800; font-size: 0.95rem; color: var(--text-main);">{{ slot.time_display }}</span>
-              <span style="font-size: 0.72rem; margin-top: 2px; font-weight: 600; color: {% if slot.is_available %}#0CA678{% else %}#E03131{% endif %};">
+              <span style="font-family: var(--font-heading); font-weight: 800; font-size: 1rem; color: var(--text-main); letter-spacing: 0.02em;">{{ slot.time_display }}</span>
+              <span style="font-size: 0.72rem; margin-top: 4px; font-weight: 700; color: {% if slot.is_available %}#2bba86{% else %}#f03e3e{% endif %};">
                 {% if slot.is_available %}
                   Available ({{ slot.booked_count }}/2)
                 {% else %}
-                  SLOT FULL (2/2)
+                  FULL (2/2)
                 {% endif %}
               </span>
             </label>
           {% endfor %}
         {% else %}
-          <div style="grid-column: 1 / -1; padding: 16px; background: #FFF3BF; color: #8F5B00; border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600; text-align: center;">
-            No valid pickup slots remain for today within business hours (5:00 PM - 10:00 PM with 20-min preparation buffer).
+          <div style="grid-column: 1 / -1; padding: 20px; background: rgba(229,169,59,0.1); border: 1px solid rgba(229,169,59,0.25); color: var(--color-gold); border-radius: var(--radius-md); font-size: 0.9rem; font-weight: 600; text-align: center;">
+            No pickup slots remain for today within service hours (5:00 PM – 10:00 PM). Please check back tomorrow!
           </div>
         {% endif %}
       </div>
 
       <!-- Grace Period Note -->
-      <div style="background: #FFF9DB; border-left: 4px solid #F59F00; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 0.82rem; color: #664D03; margin-top: 14px; line-height: 1.45;">
-        <strong>Pickup Reminder:</strong> Please collect your order around your selected pickup time. A 15-minute grace period is provided; after that, food freshness/hotness may not be guaranteed.
+      <div style="background: rgba(229,169,59,0.08); border-left: 3px solid var(--color-gold); padding: 12px 14px; border-radius: var(--radius-sm); font-size: 0.82rem; color: var(--text-muted); margin-top: 18px; line-height: 1.5;">
+        <strong style="color: var(--color-gold);">15-Minute Grace Period:</strong> Please collect your order promptly at your chosen slot. After 15 minutes, food temperature and optimal texture cannot be guaranteed.
       </div>
     </div>
 
     <!-- 3. Order Summary & Parcel Charges -->
-    <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm);">
-      <h2 style="font-family: var(--font-heading); font-size: 1.25rem; text-transform: uppercase; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
-        3. Order Summary
-      </h2>
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <span style="font-family: var(--font-heading); font-size: 0.85rem; font-weight: 800; background: var(--color-primary); color: #FFF; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">3</span>
+        <h2 style="font-family: var(--font-heading); font-size: 1.25rem; text-transform: uppercase; letter-spacing: 0.02em; margin: 0; color: var(--text-main);">
+          Order Summary
+        </h2>
+      </div>
 
-      <div id="checkoutItemsList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
+      <div id="checkoutItemsList" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
         <!-- Populated via JS from cart -->
       </div>
 
@@ -119,36 +139,39 @@
     </div>
 
     <!-- 4. Payment Selection -->
-    <div style="background: #FFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm);">
-      <h2 style="font-family: var(--font-heading); font-size: 1.25rem; text-transform: uppercase; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
-        4. Payment Method
-      </h2>
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <span style="font-family: var(--font-heading); font-size: 0.85rem; font-weight: 800; background: var(--color-primary); color: #FFF; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">4</span>
+        <h2 style="font-family: var(--font-heading); font-size: 1.25rem; text-transform: uppercase; letter-spacing: 0.02em; margin: 0; color: var(--text-main);">
+          Payment Method
+        </h2>
+      </div>
 
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-        <label style="display: flex; align-items: center; gap: 10px; padding: 12px; border: 2px solid var(--primary); border-radius: var(--radius-md); background: var(--primary-subtle); cursor: pointer;">
-          <input type="radio" name="payment_method" value="UPI" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <label class="pay-method-card active" style="display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1.5px solid var(--color-primary); border-radius: var(--radius-md); background: rgba(223,74,24,0.08); cursor: pointer; transition: all 0.2s;">
+          <input type="radio" name="payment_method" value="UPI" checked style="width: 18px; height: 18px; accent-color: var(--color-primary);">
           <div>
-            <span style="font-weight: 700; font-size: 0.95rem;">UPI (GPay / PhonePe / Paytm / QR)</span>
-            <span style="display: block; font-size: 0.78rem; color: var(--text-muted);">Instant zero-fee payment for roadside pickup</span>
+            <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-main); display: block;">UPI (Google Pay, PhonePe, Paytm, QR)</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; display: block;">Instant zero-fee payment for roadside counter pickup</span>
           </div>
         </label>
 
-        <label style="display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer;">
-          <input type="radio" name="payment_method" value="NETBANKING" style="width: 18px; height: 18px; accent-color: var(--primary);">
+        <label class="pay-method-card" style="display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-elevated); cursor: pointer; transition: all 0.2s;">
+          <input type="radio" name="payment_method" value="NETBANKING" style="width: 18px; height: 18px; accent-color: var(--color-primary);">
           <div>
-            <span style="font-weight: 700; font-size: 0.95rem;">Net Banking</span>
-            <span style="display: block; font-size: 0.78rem; color: var(--text-muted);">All major Indian banks supported</span>
+            <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-main); display: block;">Net Banking</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; display: block;">All major Indian banks supported via Cashfree</span>
           </div>
         </label>
       </div>
     </div>
 
     <!-- Error Alert Box -->
-    <div id="checkoutErrorBox" style="display: none; background: #FFE3E3; border: 1px solid #FFA8A8; color: #C92A2A; padding: 12px 14px; border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600;">
+    <div id="checkoutErrorBox" style="display: none; background: rgba(240,62,62,0.1); border: 1px solid rgba(240,62,62,0.3); color: #ff6b6b; padding: 14px 16px; border-radius: var(--radius-md); font-size: 0.9rem; font-weight: 600;">
     </div>
 
     <!-- Action Button -->
-    <button type="submit" class="hero-cta-btn" id="payNowBtn" style="width: 100%; padding: 16px; font-size: 1.2rem;">
+    <button type="submit" class="hero-cta-btn" id="payNowBtn" style="width: 100%; padding: 18px; font-size: 1.15rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
       PAY NOW &bull; <span id="checkoutPayBtnTotal">₹0.00</span>
     </button>
   </form>
@@ -193,13 +216,13 @@
         }
         const lineTotal = base + addonSum;
         itemsHtml += `
-          <div style="display:flex; justify-content:space-between; align-items:baseline; padding:6px 0; border-bottom:1px dashed #E7E0D6; font-size:0.92rem;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--border-color); font-size:0.92rem;">
             <div>
-              <strong style="color:var(--text-main);">${q}x ${item.name}</strong>
-              ${addonNames.length > 0 ? `<div style="font-size:0.78rem; color:var(--text-muted); margin-left:14px;">+ ${addonNames.join(', ')}</div>` : ''}
-              ${item.isParcel ? `<div style="font-size:0.75rem; color:#E8590C; font-weight:600; margin-left:14px;">Pack as Parcel</div>` : ''}
+              <strong style="color:var(--text-main); font-weight:700;">${q}x ${item.name}</strong>
+              ${addonNames.length > 0 ? `<div style="font-size:0.8rem; color:var(--color-gold); margin-top:2px;">+ ${addonNames.join(', ')}</div>` : ''}
+              ${item.isParcel ? `<div style="font-size:0.75rem; color:var(--color-primary); font-weight:700; margin-top:3px;">Takeaway Parcel (+₹${(q*5).toFixed(0)})</div>` : ''}
             </div>
-            <div style="font-weight:700;">₹${lineTotal.toFixed(2)}</div>
+            <div style="font-weight:800; color:var(--text-main); font-size:1rem;">₹${lineTotal.toFixed(2)}</div>
           </div>
         `;
       });
@@ -208,24 +231,24 @@
       // Render breakdown
       breakdown.innerHTML = `
         <div class="price-row">
-          <span>Food Subtotal</span>
+          <span>Items Subtotal</span>
           <span>₹${summary.itemsSubtotal.toFixed(2)}</span>
         </div>
         ${summary.addonsSubtotal > 0 ? `
           <div class="price-row">
-            <span>Add-ons / Sauces Subtotal</span>
+            <span>Add-ons / Sauces</span>
             <span>+₹${summary.addonsSubtotal.toFixed(2)}</span>
           </div>
         ` : ''}
         <div class="price-row highlight">
-          <span>Parcel Charges (${summary.totalParcelQty} items × ₹5.00)</span>
+          <span>Parcel Packaging (${summary.totalParcelQty} × ₹5.00)</span>
           <span>₹${summary.parcelTotal.toFixed(2)}</span>
         </div>
         <div class="parcel-notice">
-          Calculated as ₹5 per quantity of takeaway items for packaging.
+          Parcel charge is ₹5 per takeaway item quantity for sturdy, hygienic packaging.
         </div>
         <div class="price-row total">
-          <span>Final Payable Amount</span>
+          <span>Total Payable</span>
           <span>₹${summary.grandTotal.toFixed(2)}</span>
         </div>
       `;
@@ -239,7 +262,7 @@
     }
 
     // Slot selection highlighting
-    const slotLabels = document.querySelectorAll('#slotsGrid label');
+    const slotLabels = document.querySelectorAll('#slotsGrid label.slot-card-label');
     const slotRadios = document.querySelectorAll('.slot-radio');
 
     slotRadios.forEach(radio => {
@@ -247,11 +270,28 @@
         slotLabels.forEach(lbl => {
           const r = lbl.querySelector('.slot-radio');
           if (r && r.checked) {
-            lbl.style.borderColor = '#E8590C';
-            lbl.style.background = '#FFF4E6';
+            lbl.style.borderColor = 'var(--color-primary)';
+            lbl.style.background = 'rgba(223,74,24,0.12)';
           } else if (r && !r.disabled) {
-            lbl.style.borderColor = '#E7E0D6';
-            lbl.style.background = '#FBF9F5';
+            lbl.style.borderColor = 'var(--border-color)';
+            lbl.style.background = 'var(--bg-elevated)';
+          }
+        });
+      });
+    });
+
+    // Payment method highlighting
+    const payRadios = document.querySelectorAll('input[name="payment_method"]');
+    payRadios.forEach(pr => {
+      pr.addEventListener('change', () => {
+        document.querySelectorAll('.pay-method-card').forEach(card => {
+          const inp = card.querySelector('input');
+          if (inp && inp.checked) {
+            card.style.borderColor = 'var(--color-primary)';
+            card.style.background = 'rgba(223,74,24,0.08)';
+          } else {
+            card.style.borderColor = 'var(--border-color)';
+            card.style.background = 'var(--bg-elevated)';
           }
         });
       });
